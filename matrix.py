@@ -3,22 +3,20 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
-from qiskit import *
-from qiskit.visualization import plot_histogram
 from math import pi
-from multiprocessing import Process
 import datetime
 
-# Run the quantum circuit on a statevector simulator backend
-backend = BasicAer.get_backend('qasm_simulator')
-
 # Global variables
+I = np.matrix('1 0; 0 1')
+X = np.matrix('0 1; 1 0')
+Y = np.matrix('0 -1; 1 0')*complex(0,1)
+Z = np.matrix('1 0; 0 -1')
+paulis = [I,X,Y,Z]
+
+
 num_nodes = 4
 num_shots = 1000
 k = 1
-
-c = ClassicalRegister(num_nodes, 'c')
-q = QuantumRegister(num_nodes, 'q')
 
 def generate_graph():
     # Generate a random graph
@@ -30,41 +28,28 @@ def generate_graph():
     #plt.show()
     return G
 
-def fracAngle(l,n):
-    return np.arccos(np.sqrt(l/n))
+# take the kronecker (tensor) product of a list of len(m) matrices
+def kron(m):
+    if len(m) == 1:
+        return m
+    total = np.kron(m[0], m[1])
+    if len(m) > 2:
+        for i in range(2, len(m)):
+            total = np.kron(total, m[i])
+    return total
 
-def blocki(circ, n):
-    circ.cx(q[n-2],q[n-1])
-    circ.cu3(2.0*fracAngle(1,n),0,0, q[n-1], q[n-2])
-    circ.cx(q[n-2],q[n-1])
+def num_ones(n):
+    c = 0
+    while n:
+        c += 1
+        n &= n - 1
+    return c
 
-def blockii(circ, n,l):
-    circ.cx(q[n-l-1],q[n-1])
-    # CCRy
-    circ.cx(q[n-l], q[n-l-1])
-    circ.u3(-0.5*fracAngle(l,n),0,0, q[n-l-1])   
-    circ.cx(q[n-1], q[n-l-1])
-    circ.u3(0.5*fracAngle(l,n),0,0, q[n-l-1])
-    circ.cx(q[n-l], q[n-l-1])
-    circ.u3(-0.5*fracAngle(l,n),0,0, q[n-l-1])
-    circ.cx(q[n-1], q[n-l-1])
-    circ.u3(0.5*fracAngle(l,n),0,0, q[n-l-1])
-    circ.cx(q[n-l-1],q[n-1])  
-
-def SCS(circ, n, k):
-    blocki(circ, n)
-    for l in range(2, k+1):
-        blockii(circ, n, l)
-
-def U(circ, n, k):
-    for i in range(n,1,-1):
-        SCS(circ, i, min(i-1,k))
-
-def dicke(circ, n, k):
-    # input string
-    for i in range(n-k,n):
-        circ.x(q[i])
-    U(circ, n, k)
+def dicke(state, G, k):
+    for i in range(0, 2**len(G.nodes)):
+        if num_ones(i) == k:
+            state[i] = 1
+    return state
 
 def expectation(G, counts):
     total = 0
@@ -83,33 +68,36 @@ def expectation(G, counts):
         total += f*(counts[state]/num_shots)
     return total
 
-def phase_separator(G, circ, gamma):
+def phase_separator(state, G, gamma):
     # e^{-i \gamma deg(j) Z_j}}
-    for i in range(len(G.nodes)):
-        circ.rz(2*gamma*G.degree[i], q[i])
-    # e^{-i \gamma Z_u Z_v}
+    init = [I]*len(G.nodes)
+    # simplify later to diagonal matrix
+    total = [np.matrix('0 0; 0 0')]*len(G.nodes)
+    total = kron(total)
+    for i in range(0, len(G.nodes)):
+        init[i] = Z    
+        total += G.degree[i]*kron(init)
+        # reset
+        init = [I]*len(G.nodes)
+    
+    total = np.array(total).diagonal()
+    eigdz = np.exp(np.complex(0,-1)*gamma*total)
+    state = np.multiply(eigdz, state)
+
+    init = [I]*len(G.nodes)
+    total = [np.matrix('0 0; 0 0')]*len(G.nodes)
+    total = kron(total)
     for edge in G.edges:
-        circ.cx(q[edge[0]], q[edge[1]])
-        circ.rz(2*gamma, q[edge[1]])
-        circ.cx(q[edge[0]], q[edge[1]])
-
-def eix(circ, beta, i, j):
-    circ.h(q[i])
-    circ.h(q[j])
-    circ.cx(q[i], q[j])
-    circ.u1(2*beta, q[j])
-    circ.cx(q[i], q[j])
-    circ.h(q[i])
-    circ.h(q[j])
-
-def eiy(circ, beta, i, j):
-    circ.u2(0, pi/2, q[i])
-    circ.u2(0, pi/2, q[j])
-    circ.cx(q[i], q[j])
-    circ.u1(2*beta, q[j])
-    circ.cx(q[i], q[j])
-    circ.u2(pi/2, pi, q[i])
-    circ.u2(pi/2, pi, q[j])
+        init[edge[0]] = Z
+        init[edge[1]] = Z
+        total += kron(init)
+        # reset
+        init = [I]*len(G.nodes)
+        
+    total = np.array(total).diagonal()
+    eigzz = np.exp(np.complex(0,-1)*gamma*total)
+    state = np.multiply(eigzz, state)
+    return state
 
 def ring_mixer(G, circ, beta):
     # even terms
@@ -131,14 +119,18 @@ def ring_mixer(G, circ, beta):
         eix(circ, beta, len(G.nodes)-1, 0)
         eiy(circ, beta, len(G.nodes)-1, 0)
 
-def qaoa(G, circ, gamma, beta, p):
+def qaoa(G, gamma, beta, p):
+    state = np.zeros(2**len(G.nodes))
     # prepare equal superposition over Hamming weight k
-    dicke(circ, num_nodes, k)
+    state = dicke(state, G, k)
+    state = phase_separator(state, G, 0.5)
+    print(state)
+    '''
     for i in range(p):
-        phase_separator(G, circ, gamma)
-        ring_mixer(G, circ, beta)
-    # measure
-    circ.measure(q,c)
+        state = phase_separator(state, G, gamma)
+        state = ring_mixer(state, G, beta)
+    '''
+    return 0
 
 def gamma_beta():
     G = generate_graph()
@@ -153,12 +145,7 @@ def gamma_beta():
     print('0/' + str(num_steps) + '\t' + str(datetime.datetime.now().time()))
     for i in range(0, num_steps):
         for j in range(0, num_steps):
-            circ = QuantumCircuit(q, c)
-            qaoa(G, circ, gamma, beta, p)
-            #circ.draw(interactive=True, output='latex')
-            job = execute(circ, backend, shots=num_shots)
-            result = job.result()
-            counts = result.get_counts(circ)
+            counts = qaoa(G, gamma, beta, p)
             exp = expectation(G, counts)
             g_list.append(exp)
             #print('g: ' + str(gamma) + ', b: ' + str(beta) + ', exp: ' + str(exp))
@@ -172,7 +159,7 @@ def gamma_beta():
     grid = list(reversed(grid))
     #print(grid)
 
-    im = ax.imshow(grid, extent=(0, pi, 0, pi), interpolation='None', cmap=cm.inferno_r)
+    im = ax.imshow(grid, extent=(0, pi, 0, pi), interpolation='gaussian', cmap=cm.inferno_r)
     cbar = ax.figure.colorbar(im, ax=ax)
     cbar.ax.set_ylabel('$\\langle C \\rangle$', rotation=-90, va="bottom")
 
@@ -183,4 +170,3 @@ def gamma_beta():
 
 if __name__ == '__main__':
     gamma_beta()
-    #test_expectation()
