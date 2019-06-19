@@ -14,7 +14,7 @@ backend = BasicAer.get_backend('qasm_simulator')
 
 # Global variables
 num_nodes = 4
-num_shots = 500
+num_shots = 1000
 k = 1
 
 c = ClassicalRegister(num_nodes, 'c')
@@ -142,7 +142,7 @@ def qaoa(G, circ, gamma, beta, p):
 
 def gamma_beta():
     G = generate_graph()
-    num_steps = 60
+    num_steps = 100
     gamma = 0
     beta = 0
     p = 1
