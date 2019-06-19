@@ -15,7 +15,7 @@ backend = BasicAer.get_backend('qasm_simulator')
 # Global variables
 num_nodes = 4
 num_shots = 500
-k = 3
+k = 1
 
 c = ClassicalRegister(num_nodes, 'c')
 q = QuantumRegister(num_nodes, 'q')
@@ -142,7 +142,7 @@ def qaoa(G, circ, gamma, beta, p):
 
 def gamma_beta():
     G = generate_graph()
-    num_steps = 30
+    num_steps = 60
     gamma = 0
     beta = 0
     p = 1
@@ -152,7 +152,7 @@ def gamma_beta():
 
     print('0/' + str(num_steps) + '\t' + str(datetime.datetime.now().time()))
     for i in range(0, num_steps):
-        for j in range(0, 2*num_steps):
+        for j in range(0, num_steps):
             circ = QuantumCircuit(q, c)
             qaoa(G, circ, gamma, beta, p)
             #circ.draw(interactive=True, output='latex')
@@ -162,7 +162,7 @@ def gamma_beta():
             exp = expectation(G, counts)
             g_list.append(exp)
             #print('g: ' + str(gamma) + ', b: ' + str(beta) + ', exp: ' + str(exp))
-            gamma += 2*pi/(2*num_steps-1)
+            gamma += pi/(num_steps-1)
         beta += pi/(num_steps-1)
         gamma = 0
         grid.append(g_list)
@@ -172,7 +172,7 @@ def gamma_beta():
     grid = list(reversed(grid))
     #print(grid)
 
-    im = ax.imshow(grid, extent=(0, 2*pi, 0, pi), interpolation='gaussian', cmap=cm.inferno_r)
+    im = ax.imshow(grid, extent=(0, pi, 0, pi), interpolation='gaussian', cmap=cm.inferno_r)
     cbar = ax.figure.colorbar(im, ax=ax)
     cbar.ax.set_ylabel('$\\langle C \\rangle$', rotation=-90, va="bottom")
 
