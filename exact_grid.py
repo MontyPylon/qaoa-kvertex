@@ -15,19 +15,18 @@ Y = np.matrix('0 -1; 1 0')*complex(0,1)
 Z = np.matrix('1 0; 0 -1')
 paulis = [I,X,Y,Z]
 
-
 num_nodes = 4
-num_shots = 1000
-k = 1
+k = 3
 
 def generate_graph():
     # Generate a random graph
     #G = nx.fast_gnp_random_graph(num_nodes,0.8)
-    G = nx.Graph()
-    G.add_nodes_from([0, 1, 2, 3])
-    G.add_edges_from([(0,1),(1, 2), (1, 3), (0,3)])
-    #nx.draw(G, with_labels=True, font_weight='bold')
-    #plt.show()
+    G = nx.complete_graph(7)
+    #G = nx.Graph()
+    #G.add_nodes_from([0, 1, 2, 3])
+    #G.add_edges_from([(0,1),(1, 2), (1, 3), (0,3)])
+    nx.draw(G, with_labels=True, font_weight='bold')
+    plt.show()
     return G
 
 # take the kronecker (tensor) product of a list of matrices
@@ -169,8 +168,8 @@ def qaoa(G, gamma, beta, p):
     state = dicke(state, G, k)
     for i in range(p):
         state = phase_separator(state, G, gamma)
-        #state = ring_mixer(state, G, beta)
-        state = parity_ring_mixer(state, G, beta)
+        state = ring_mixer(state, G, beta)
+        #state = parity_ring_mixer(state, G, beta)
 
     # set small components to 0 for readability
     tol = 1e-16
