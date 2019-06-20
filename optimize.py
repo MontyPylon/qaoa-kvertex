@@ -17,7 +17,7 @@ Y = np.matrix('0 -1; 1 0')*complex(0,1)
 Z = np.matrix('1 0; 0 -1')
 paulis = [I,X,Y,Z]
 
-num_nodes = 5
+num_nodes = 6
 G = None
 
 def draw():
@@ -28,7 +28,9 @@ def draw():
 def generate_graph():
     global G
     # Generate a random graph
-    G = nx.fast_gnp_random_graph(num_nodes,0.8)
+    G = nx.fast_gnp_random_graph(num_nodes, 0.5)
+    while not nx.is_connected(G):
+        G = nx.fast_gnp_random_graph(num_nodes, 0.5)
     #G = nx.complete_graph(7)
     #G = nx.Graph()
     #G.add_nodes_from([0, 1, 2, 3])
@@ -196,16 +198,24 @@ def opt(args):
 def gamma_beta():
     global G
     G = generate_graph()
-    x0 = np.array([pi/2, pi/2])
-    #optimal = minimize(opt, x0, method='Nelder-Mead', tol=1e-6) 
-    optimal = minimize(opt, x0, bounds=[[0,pi],[0,pi]])
-    print('---------------------------')
-    print(optimal)
-    print('---------------------------')
-    temp_map(optimal.x)
-    
+    num_steps = 3
+    gamma = 0
+    beta = 0
+    opts = []
 
-def temp_map(opt):
+    print('0/' + str(num_steps) + '\t' + str(datetime.datetime.now().time()))
+    for i in range(0, num_steps):
+        for j in range(0, num_steps):
+            optimal = minimize(opt, [gamma, beta], bounds=[[0,pi],[0,pi]])
+            opts.append(optimal.x)
+            gamma += pi/(num_steps-1)
+        beta += pi/(num_steps-1)
+        gamma = 0
+        print(str(i+1) + '/' + str(num_steps) + '\t' + str(datetime.datetime.now().time()))
+
+    temp_map(opts)
+
+def temp_map(opts):
     num_steps = 30
     gamma = 0
     beta = 0
@@ -240,7 +250,8 @@ def temp_map(opt):
     plt.ylabel('$\\beta$')
     plt.title('$\\beta \\ vs \\ \\gamma$\nn=' + str(num_nodes) + ', k=' + str(k) + ', p=' + str(p) + ', grid_size=' + str(num_steps) + 'x' + str(num_steps))
 
-    plt.scatter(opt[0], opt[1], s=50, c='yellow', marker='o')
+    for i in opts:
+        plt.scatter(i[0], i[1], s=50, c='yellow', marker='o')
     plt.show()
 
 if __name__ == '__main__':
