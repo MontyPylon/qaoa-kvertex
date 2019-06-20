@@ -9,8 +9,8 @@ from math import pi
 from multiprocessing import Process
 import datetime
 
-# Run the quantum circuit on a statevector simulator backend
-backend = BasicAer.get_backend('qasm_simulator')
+#backend = BasicAer.get_backend('qasm_simulator')
+backend = Aer.get_backend('statevector_simulator')
 
 # Global variables
 num_nodes = 4
@@ -66,13 +66,15 @@ def dicke(circ, n, k):
         circ.x(q[i])
     U(circ, n, k)
 
-def expectation(G, counts):
+def expectation(G, state):
     total = 0
-    for state in counts:
-        sa = []
-        for i in state:
-            sa.append(int(i))
-        sa = list(reversed(sa))
+    for i in range(0, len(state)):
+        if state[i] == 0:
+            continue
+        sa = [0]*len(G.nodes)
+        b = bin(i)[2:]
+        for j in range(0, len(b)):
+            sa[j] = int(b[len(b)-1-j])
         total_cost = 0
         for edge in G.edges:
             cost = 3
@@ -80,24 +82,40 @@ def expectation(G, counts):
                 cost = -1
             total_cost += cost
         f = -(1/4)*(total_cost - 3*G.number_of_edges())
-        total += f*(counts[state]/num_shots)
+        prob = np.real(state[i]*np.conj(state[i]))
+        total += f*prob
     return total
 
 def phase_separator(G, circ, gamma):
     # e^{-i \gamma deg(j) Z_j}}
     for i in range(len(G.nodes)):
-        circ.rz(2*gamma*G.degree[i], q[i])
+        #circ.rz(2*gamma*G.degree[i], q[i])
+        circ.u1(gamma*G.degree[i], q[i])
+        circ.x(q[i])
+        circ.u1(-gamma*G.degree[i], q[i])
+        circ.x(q[i])
+
     # e^{-i \gamma Z_u Z_v}
     for edge in G.edges:
         circ.cx(q[edge[0]], q[edge[1]])
-        circ.rz(2*gamma, q[edge[1]])
+        #circ.rz(2*gamma, q[edge[1]])
+        circ.u1(gamma, q[edge[1]])
+        circ.x(q[edge[1]])
+        circ.u1(-gamma, q[edge[1]])
+        circ.x(q[edge[1]])
         circ.cx(q[edge[0]], q[edge[1]])
 
 def eix(circ, beta, i, j):
     circ.h(q[i])
     circ.h(q[j])
     circ.cx(q[i], q[j])
-    circ.u1(2*beta, q[j])
+
+    #circ.u1(2*beta, q[j])
+    circ.u1(beta, q[j])
+    circ.x(q[j])
+    circ.u1(-beta, q[j])
+    circ.x(q[j])
+
     circ.cx(q[i], q[j])
     circ.h(q[i])
     circ.h(q[j])
@@ -106,7 +124,13 @@ def eiy(circ, beta, i, j):
     circ.u2(0, pi/2, q[i])
     circ.u2(0, pi/2, q[j])
     circ.cx(q[i], q[j])
-    circ.u1(2*beta, q[j])
+
+    #circ.u1(2*beta, q[j])
+    circ.u1(beta, q[j])
+    circ.x(q[j])
+    circ.u1(-beta, q[j])
+    circ.x(q[j])
+
     circ.cx(q[i], q[j])
     circ.u2(pi/2, pi, q[i])
     circ.u2(pi/2, pi, q[j])
@@ -138,11 +162,11 @@ def qaoa(G, circ, gamma, beta, p):
         phase_separator(G, circ, gamma)
         ring_mixer(G, circ, beta)
     # measure
-    circ.measure(q,c)
+    #circ.measure(q,c)
 
 def gamma_beta():
     G = generate_graph()
-    num_steps = 100
+    num_steps = 30
     gamma = 0
     beta = 0
     p = 1
@@ -150,16 +174,28 @@ def gamma_beta():
     grid = []
     fig, ax = plt.subplots()
 
+    '''
+    circ = QuantumCircuit(q, c)
+    qaoa(G, circ, gamma, beta, p)
+    #circ.draw(interactive=True, output='latex')
+    job = execute(circ, backend)
+    result = job.result()
+    statevector = result.get_statevector(circ)
+    for i in statevector:
+        print(i)
+
+    '''
+
     print('0/' + str(num_steps) + '\t' + str(datetime.datetime.now().time()))
     for i in range(0, num_steps):
         for j in range(0, num_steps):
             circ = QuantumCircuit(q, c)
             qaoa(G, circ, gamma, beta, p)
             #circ.draw(interactive=True, output='latex')
-            job = execute(circ, backend, shots=num_shots)
+            job = execute(circ, backend)
             result = job.result()
-            counts = result.get_counts(circ)
-            exp = expectation(G, counts)
+            state = result.get_statevector(circ)
+            exp = expectation(G, state)
             g_list.append(exp)
             #print('g: ' + str(gamma) + ', b: ' + str(beta) + ', exp: ' + str(exp))
             gamma += pi/(num_steps-1)
@@ -172,7 +208,7 @@ def gamma_beta():
     grid = list(reversed(grid))
     #print(grid)
 
-    im = ax.imshow(grid, extent=(0, pi, 0, pi), interpolation='None', cmap=cm.inferno_r)
+    im = ax.imshow(grid, extent=(0, pi, 0, pi), interpolation='gaussian', cmap=cm.inferno_r)
     cbar = ax.figure.colorbar(im, ax=ax)
     cbar.ax.set_ylabel('$\\langle C \\rangle$', rotation=-90, va="bottom")
 

@@ -14,10 +14,19 @@ def generate_graphs():
 
 def read_graphs():
     for i in range(1, 996):
-        G = nx.read_edgelist('benchmarks/atlas/' + str(i) + '.edgelist')
+        G = nx.read_edgelist('graphs/atlas/' + str(i) + '.edgelist')
+        nx.draw(G, with_labels=True, font_weight='bold')
+        plt.show()
+
+def draw_regular():
+    n = 10
+    d = 3
+    while True:
+        G = nx.random_regular_graph(d, n, seed=None)
         nx.draw(G, with_labels=True, font_weight='bold')
         plt.show()
 
 if __name__ == '__main__':
     #generate_graphs()
-    read_graphs()
+    #read_graphs()
+    draw_regular()

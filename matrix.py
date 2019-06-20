@@ -3,8 +3,10 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
+from scipy.special import comb
 from math import pi
 import datetime
+from scipy.linalg import expm
 
 # Global variables
 I = np.matrix('1 0; 0 1')
@@ -28,7 +30,7 @@ def generate_graph():
     #plt.show()
     return G
 
-# take the kronecker (tensor) product of a list of len(m) matrices
+# take the kronecker (tensor) product of a list of matrices
 def kron(m):
     if len(m) == 1:
         return m
@@ -48,16 +50,18 @@ def num_ones(n):
 def dicke(state, G, k):
     for i in range(0, 2**len(G.nodes)):
         if num_ones(i) == k:
-            state[i] = 1
+            state[i] = 1/(np.sqrt(comb(len(G.nodes), k)))
     return state
 
-def expectation(G, counts):
+def expectation(G, state):
     total = 0
-    for state in counts:
-        sa = []
-        for i in state:
-            sa.append(int(i))
-        sa = list(reversed(sa))
+    for i in range(0, len(state)):
+        if state[i] == 0:
+            continue
+        sa = [0]*len(G.nodes)
+        b = bin(i)[2:]
+        for j in range(0, len(b)):
+            sa[j] = int(b[len(b)-1-j])
         total_cost = 0
         for edge in G.edges:
             cost = 3
@@ -65,18 +69,18 @@ def expectation(G, counts):
                 cost = -1
             total_cost += cost
         f = -(1/4)*(total_cost - 3*G.number_of_edges())
-        total += f*(counts[state]/num_shots)
+        prob = np.real(state[i]*np.conj(state[i]))
+        total += f*prob
     return total
 
 def phase_separator(state, G, gamma):
-    # e^{-i \gamma deg(j) Z_j}}
     init = [I]*len(G.nodes)
     # simplify later to diagonal matrix
-    total = [np.matrix('0 0; 0 0')]*len(G.nodes)
+    total = [complex(0,0)*np.matrix('0 0; 0 0')]*len(G.nodes)
     total = kron(total)
     for i in range(0, len(G.nodes)):
         init[i] = Z    
-        total += G.degree[i]*kron(init)
+        total += G.degree[len(G.nodes) - 1 - i]*kron(init)
         # reset
         init = [I]*len(G.nodes)
     
@@ -85,11 +89,11 @@ def phase_separator(state, G, gamma):
     state = np.multiply(eigdz, state)
 
     init = [I]*len(G.nodes)
-    total = [np.matrix('0 0; 0 0')]*len(G.nodes)
+    total = [complex(0,0)*np.matrix('0 0; 0 0')]*len(G.nodes)
     total = kron(total)
     for edge in G.edges:
-        init[edge[0]] = Z
-        init[edge[1]] = Z
+        init[len(G.nodes) - 1 - edge[0]] = Z
+        init[len(G.nodes) - 1 - edge[1]] = Z
         total += kron(init)
         # reset
         init = [I]*len(G.nodes)
@@ -99,42 +103,84 @@ def phase_separator(state, G, gamma):
     state = np.multiply(eigzz, state)
     return state
 
-def ring_mixer(G, circ, beta):
+def eix(state, G, beta, i, j):
+    init = [I]*len(G.nodes)
+    init[len(G.nodes) - 1 - i] = X
+    init[len(G.nodes) - 1 - j] = X
+    total = kron(init)
+    eibxx = np.asmatrix(expm(np.complex(0,-1)*beta*total))
+    state = np.dot(eibxx, state)
+    return np.asarray(state).reshape(-1)
+
+def eiy(state, G, beta, i, j):
+    init = [I]*len(G.nodes)
+    init[len(G.nodes) - 1 - i] = Y
+    init[len(G.nodes) - 1 - j] = Y
+    total = kron(init)
+    eibxx = np.asmatrix(expm(np.complex(0,-1)*beta*total))
+    state = np.dot(eibxx, state)
+    return np.asarray(state).reshape(-1)
+
+def parity_ring_mixer(state, G, beta):
     # even terms
     for i in range(0, len(G.nodes)-1, 2):
         #print(str(i) + ", " + str((i+1) % len(G.nodes)))
-        eix(circ, beta, i, (i+1) % len(G.nodes))
-        eiy(circ, beta, i, (i+1) % len(G.nodes))
+        state = eix(state, G, beta, i, (i+1) % len(G.nodes))
+        state = eiy(state, G, beta, i, (i+1) % len(G.nodes))
 
     # odd terms
     for i in range(1, len(G.nodes), 2):
         #print(str(i) + ", " + str((i+1) % len(G.nodes)))
-        eix(circ, beta, i, (i+1) % len(G.nodes))
-        eiy(circ, beta, i, (i+1) % len(G.nodes))
+        state = eix(state, G, beta, i, (i+1) % len(G.nodes))
+        state = eiy(state, G, beta, i, (i+1) % len(G.nodes))
 
     # if number of edges in ring is odd, we have one leftover term
     if len(G.nodes) % 2 != 0:
         #print("special case")
         #print(str(len(G.nodes)-1) + ", 0")
-        eix(circ, beta, len(G.nodes)-1, 0)
-        eiy(circ, beta, len(G.nodes)-1, 0)
+        state = eix(state, G, beta, len(G.nodes)-1, 0)
+        state = eiy(state, G, beta, len(G.nodes)-1, 0)
+
+    return state
+
+def ring_mixer(state, G, beta):
+    init = [I]*len(G.nodes)
+    total = [complex(1,0)*np.matrix('0 0; 0 0')]*len(G.nodes)
+    total = kron(total)
+    for i in range(0, len(G.nodes)):
+        # X_i X_{i+1}
+        init[i] = X 
+        init[(i+1) % len(G.nodes)] = X
+        total += kron(init)
+        init = [I]*len(G.nodes)
+        # Y_i Y_{i+1}
+        init[i] = Y 
+        init[(i+1) % len(G.nodes)] = Y
+        total += kron(init)
+        init = [I]*len(G.nodes)
+    
+    eibxxyy = np.asmatrix(expm(np.complex(0,-1)*beta*total))
+    state = np.dot(eibxxyy, state)
+    state = np.asarray(state).reshape(-1)
+    return state
 
 def qaoa(G, gamma, beta, p):
     state = np.zeros(2**len(G.nodes))
-    # prepare equal superposition over Hamming weight k
     state = dicke(state, G, k)
-    state = phase_separator(state, G, 0.5)
-    print(state)
-    '''
     for i in range(p):
         state = phase_separator(state, G, gamma)
-        state = ring_mixer(state, G, beta)
-    '''
-    return 0
+        #state = ring_mixer(state, G, beta)
+        state = parity_ring_mixer(state, G, beta)
+
+    # set small components to 0 for readability
+    tol = 1e-16
+    state.real[abs(state.real) < tol] = 0.0
+    state.imag[abs(state.imag) < tol] = 0.0
+    return state
 
 def gamma_beta():
     G = generate_graph()
-    num_steps = 100
+    num_steps = 30
     gamma = 0
     beta = 0
     p = 1
@@ -142,11 +188,19 @@ def gamma_beta():
     grid = []
     fig, ax = plt.subplots()
 
+    '''
+    state = qaoa(G, gamma, beta, p)
+    for i in state:
+        print(i)
+    exp = expectation(G, state)
+    print('exp: ' + str(exp))
+    '''
+
     print('0/' + str(num_steps) + '\t' + str(datetime.datetime.now().time()))
     for i in range(0, num_steps):
         for j in range(0, num_steps):
-            counts = qaoa(G, gamma, beta, p)
-            exp = expectation(G, counts)
+            state = qaoa(G, gamma, beta, p)
+            exp = expectation(G, state)
             g_list.append(exp)
             #print('g: ' + str(gamma) + ', b: ' + str(beta) + ', exp: ' + str(exp))
             gamma += pi/(num_steps-1)
