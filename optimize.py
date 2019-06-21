@@ -9,6 +9,7 @@ from math import pi
 import datetime
 from scipy.linalg import expm
 from multiprocessing import Process
+import random
 
 # Global variables
 I = np.matrix('1 0; 0 1')
@@ -17,7 +18,7 @@ Y = np.matrix('0 -1; 1 0')*complex(0,1)
 Z = np.matrix('1 0; 0 -1')
 paulis = [I,X,Y,Z]
 
-num_nodes = 6
+num_nodes = 5
 G = None
 
 def draw():
@@ -28,10 +29,10 @@ def draw():
 def generate_graph():
     global G
     # Generate a random graph
-    G = nx.fast_gnp_random_graph(num_nodes, 0.5)
+    G = nx.fast_gnp_random_graph(num_nodes, random.random())
     while not nx.is_connected(G):
-        G = nx.fast_gnp_random_graph(num_nodes, 0.5)
-    #G = nx.complete_graph(7)
+        G = nx.fast_gnp_random_graph(num_nodes, random.random())
+    #G = nx.complete_graph(num_nodes)
     #G = nx.Graph()
     #G.add_nodes_from([0, 1, 2, 3])
     #G.add_edges_from([(0,1),(1, 2), (1, 3), (0,3)])
@@ -187,42 +188,47 @@ def qaoa(G, k, gamma, beta, p):
     state.imag[abs(state.imag) < tol] = 0.0
     return state
 
-def opt(args):
+def opt(args, *kp):
     global G
-    state = qaoa(G, 1, args[0], args[1], 1)
+    state = qaoa(G, kp[0], args[0], args[1], kp[1])
     exp = expectation(G, state)
-    #print(-exp)
     return -exp
 
 
 def gamma_beta():
     global G
     G = generate_graph()
-    num_steps = 3
-    gamma = 0
-    beta = 0
+    k = 1
+    p = 1
+    num_steps = 6
+    gamma = pi/(2*(num_steps+1))
+    beta = pi/(num_steps+1)
     opts = []
+    exp_c = 0
 
     print('0/' + str(num_steps) + '\t' + str(datetime.datetime.now().time()))
     for i in range(0, num_steps):
         for j in range(0, num_steps):
-            optimal = minimize(opt, [gamma, beta], bounds=[[0,pi],[0,pi]])
+            optimal = minimize(opt, [gamma, beta], args=(k, p,), bounds=[[0,pi/2],[0,pi]])
             opts.append(optimal.x)
-            gamma += pi/(num_steps-1)
-        beta += pi/(num_steps-1)
-        gamma = 0
+            if exp_c > optimal.fun:
+                exp_c = optimal.fun
+            gamma += pi/(2*(num_steps+1))
+        beta += pi/(num_steps+1)
+        gamma = pi/(2*(num_steps+1))
         print(str(i+1) + '/' + str(num_steps) + '\t' + str(datetime.datetime.now().time()))
+    
+    exp_c *= -1
+    print('------------- max <C>: ' + str(exp_c))
+    temp_map(k, p, opts, exp_c)
 
-    temp_map(opts)
-
-def temp_map(opts):
+def temp_map(k, p, opts, exp_c):
     num_steps = 30
     gamma = 0
     beta = 0
-    p = 1
-    k = 1
     g_list = []
     grid = []
+    grid_max = 0
     fig, ax = plt.subplots()
 
     print('0/' + str(num_steps) + '\t' + str(datetime.datetime.now().time()))
@@ -231,8 +237,10 @@ def temp_map(opts):
             state = qaoa(G, k, gamma, beta, p)
             exp = expectation(G, state)
             g_list.append(exp)
+            if grid_max < exp:
+                grid_max = exp
             #print('g: ' + str(gamma) + ', b: ' + str(beta) + ', exp: ' + str(exp))
-            gamma += pi/(num_steps-1)
+            gamma += pi/(2*(num_steps-1))
         beta += pi/(num_steps-1)
         gamma = 0
         grid.append(g_list)
@@ -240,9 +248,9 @@ def temp_map(opts):
         print(str(i+1) + '/' + str(num_steps) + '\t' + str(datetime.datetime.now().time()))
 
     grid = list(reversed(grid))
-    #print(grid)
+    print('-------------- max grid <C>: ' + str(grid_max))
 
-    im = ax.imshow(grid, extent=(0, pi, 0, pi), interpolation='gaussian', cmap=cm.inferno_r)
+    im = ax.imshow(grid, aspect='auto', extent=(0, pi/2, 0, pi), interpolation='gaussian', cmap=cm.inferno_r)
     cbar = ax.figure.colorbar(im, ax=ax)
     cbar.ax.set_ylabel('$\\langle C \\rangle$', rotation=-90, va="bottom")
 
