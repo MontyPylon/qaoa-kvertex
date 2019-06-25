@@ -13,7 +13,7 @@ def generate_graph():
     G = nx.read_gpickle('../mixer-phase/benchmarks/atlas/' + str(gi) + '.gpickle')
     return G, gi
 
-def brute_force(G, k):
+def brute_force(G, k, p, n):
     comb = combinations(G.nodes, k)
     highest = 0
     for group in list(comb):
