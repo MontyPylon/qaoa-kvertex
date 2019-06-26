@@ -8,7 +8,7 @@ import networkx as nx
 # from pring_ps_pring import pring_ps_pring
 from brute_force import brute_force
 from dicke_ps_ring import dicke_ps_ring
- from ring_ps_ring import ring_ps_ring
+from ring_ps_ring import ring_ps_ring
 
 
 def get_exp(G, gi, k, p, num_steps, method, method_string):
@@ -38,8 +38,8 @@ def get_exp(G, gi, k, p, num_steps, method, method_string):
 
 def compare():
     # min: 1, max: 995
-    start = 1
-    end = 40
+    start = 200
+    end = 220
     p = 1
     n = 3
     x = []
