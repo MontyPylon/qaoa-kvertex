@@ -112,16 +112,20 @@ def ring_mixer(state, G, beta):
     state = np.asarray(state).reshape(-1)
     return state
 
-def prep(state, G, k):
+def prep(state, G, k, m):
+    counter = 0
     for i in range(0, 2**len(G.nodes)):
         if num_ones(i) == k:
-            state[i] = 1
-            break
+            # start with different initial states
+            if m == counter:
+                state[i] = 1
+                break
+            counter += 1
     return state
 
-def qaoa(G, k, gamma, beta0, beta1, p):
+def qaoa(G, k, gamma, beta0, beta1, p, m):
     state = np.zeros(2**len(G.nodes))
-    state = prep(state, G, k)
+    state = prep(state, G, k, m)
     state = ring_mixer(state, G, beta0)
     for i in range(p):
         state = phase_separator(state, G, gamma)
@@ -133,9 +137,9 @@ def qaoa(G, k, gamma, beta0, beta1, p):
     state.imag[abs(state.imag) < tol] = 0.0
     return state
 
-def opt(args, *Gkp):
-    state = qaoa(Gkp[0], Gkp[1], args[0], args[1], args[2], Gkp[2])
-    exp = expectation(Gkp[0], state)
+def opt(args, *Gkpm):
+    state = qaoa(Gkpm[0], Gkpm[1], args[0], args[1], args[2], Gkpm[2], Gkpm[3])
+    exp = expectation(Gkpm[0], state)
     return -exp
 
 def ring_ps_ring(G, k, p, num_steps):
@@ -144,17 +148,25 @@ def ring_ps_ring(G, k, p, num_steps):
     beta1 = pi/(num_steps+1)
     opts = []
     exp_c = 0
+    exp_arr = []
 
-    for i in range(0, num_steps):
-        for j in range(0, num_steps):
-            for l in range(0, num_steps):
-                optimal = minimize(opt, [gamma, beta0, beta1], args=(G, k, p,), bounds=[[0,pi/2],[0,pi],[0,pi]])
-                opts.append(optimal.x)
-                if exp_c > optimal.fun:
-                    exp_c = optimal.fun
-                gamma += pi/(2*(num_steps+1))
-            gamma = pi/(2*(num_steps+1))
-            beta0 += pi/(num_steps+1)
-        beta0 = pi/(num_steps+1)
-        beta1 += pi/(num_steps+1)
-    return exp_c*-1
+    num_init = int(comb(len(G.nodes), k))
+    for m in range(0, num_init):
+        for i in range(0, num_steps):
+            for j in range(0, num_steps):
+                for l in range(0, num_steps):
+                    optimal = minimize(opt, [gamma, beta0, beta1], args=(G, k, p, m), bounds=[[0,pi/2],[0,pi],[0,pi]])
+                    opts.append(optimal.x)
+                    if exp_c > optimal.fun:
+                        exp_c = optimal.fun
+                    gamma += pi/(2*(num_steps+1))
+                gamma = pi/(2*(num_steps+1))
+                beta0 += pi/(num_steps+1)
+            beta0 = pi/(num_steps+1)
+            beta1 += pi/(num_steps+1)
+        exp_arr.append(exp_c*-1)
+
+    avg = 0
+    for entry in exp_arr:
+        avg += entry*(1/num_init)
+    return avg

@@ -15,9 +15,6 @@ Y = np.matrix('0 -1; 1 0')*complex(0,1)
 Z = np.matrix('1 0; 0 -1')
 paulis = [I,X,Y,Z]
 
-num_nodes = 4
-k = 3
-
 def generate_graph():
     # Pick a random graph from the atlas
     gi = random.randint(2,995)
@@ -162,6 +159,7 @@ def ring_mixer(state, G, beta):
     return state
 
 def qaoa(G, gamma, beta, p):
+    global k
     state = np.zeros(2**len(G.nodes))
     state = dicke(state, G, k)
     for i in range(p):
@@ -176,11 +174,13 @@ def qaoa(G, gamma, beta, p):
     return state
 
 def gamma_beta():
+    global k
     G, gi = generate_graph()
     num_steps = 30
     gamma = 0
     beta = 0
     p = 1
+    k = 3
     g_list = []
     grid = []
     fig, ax = plt.subplots()
@@ -207,7 +207,7 @@ def gamma_beta():
 
     plt.xlabel('$\\gamma$')
     plt.ylabel('$\\beta$')
-    plt.title('$\\beta \\ vs \\ \\gamma$\nn=' + str(num_nodes) + ', k=' + str(k) + ', p=' + str(p) + ', grid_size=' + str(num_steps) + 'x' + str(num_steps) + ', gi=' + str(gi))
+    plt.title('$\\beta \\ vs \\ \\gamma$\nn=' + str(len(G.nodes)) + ', k=' + str(k) + ', p=' + str(p) + ', grid_size=' + str(num_steps) + 'x' + str(num_steps) + ', gi=' + str(gi))
     plt.show()
 
 if __name__ == '__main__':

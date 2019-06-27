@@ -38,8 +38,8 @@ def get_exp(G, gi, k, p, num_steps, method, method_string):
 
 def compare():
     # min: 1, max: 995
-    start = 200
-    end = 220
+    start = 41
+    end = 60
     p = 1
     n = 3
     x = []
