@@ -1,13 +1,10 @@
 import networkx as nx
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 import numpy as np
-from scipy.special import comb
+from scipy.misc import comb
 from scipy.optimize import minimize
 from math import pi
 import datetime
 from scipy.linalg import expm
-from multiprocessing import Process
 import random
 
 # Global variables
@@ -55,7 +52,7 @@ def expectation(G, state):
             if sa[edge[0]] == 1 or sa[edge[1]] == 1:
                 cost = -1
             total_cost += cost
-        f = -(1/4)*(total_cost - 3*G.number_of_edges())
+        f = -(0.25)*(total_cost - 3*len(G.edges))
         prob = np.real(state[i]*np.conj(state[i]))
         total += f*prob
     return total

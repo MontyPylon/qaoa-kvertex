@@ -1,10 +1,7 @@
 import networkx as nx
-import matplotlib.pyplot as plt
 import numpy as np
-from scipy.special import comb
 from itertools import combinations 
 import random
-from multiprocessing import Process
 
 def generate_graph():
     # Pick a random graph from the atlas

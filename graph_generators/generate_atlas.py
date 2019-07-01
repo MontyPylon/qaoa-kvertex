@@ -10,7 +10,7 @@ def generate_graphs():
         if not nx.is_connected(G):
             continue
         graph_num += 1
-        nx.write_gpickle(G, '../mixer-phase/benchmarks/atlas/' + str(graph_num) + '.gpickle')
+        nx.write_gpickle(G, '../hpc/atlas/' + str(graph_num) + '.gpickle')
 
 def read_graphs():
     for i in range(1, 996):
@@ -26,6 +26,6 @@ def draw_graphs():
         plt.clf()
 
 if __name__ == '__main__':
-    #generate_graphs()
+    generate_graphs()
     #read_graphs()
-    draw_graphs()
+    #draw_graphs()

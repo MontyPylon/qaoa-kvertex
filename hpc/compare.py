@@ -39,7 +39,7 @@ def get_exp(G, gi, k, p, num_steps, method, method_string):
 def compare():
     # min: 1, max: 995
     start = 1
-    end = 3
+    end = 100
     p = 1
     n = 3
     x = []
@@ -60,12 +60,12 @@ def compare():
 
         y1.append(get_exp(G, gi, k, p, n, brute_force, 'brute_force'))
         y2.append(get_exp(G, gi, k, p, n, dicke_ps_ring, 'dicke_ps_ring'))
-        y3.append(get_exp(G, gi, k, p, n, ring_ps_ring, 'ring_ps_ring'))
-
+        #y3.append(get_exp(G, gi, k, p, n, ring_ps_ring, 'ring_ps_ring'))
 
     plt.plot(x, y1, '-bo', label='optimal')
     plt.plot(x, y2, '-go', label='dicke_ps_ring')
-    plt.plot(x, y3, '-ro', label='ring_ps_ring')
+    #plt.plot(x, y3, '-ro', label='ring_ps_ring')
+
     plt.legend()
 
     plt.xlabel('Graph atlas index')
