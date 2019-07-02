@@ -3,24 +3,23 @@ import numpy as np
 from scipy.misc import comb
 from scipy.optimize import minimize
 from math import pi
-import datetime
 from scipy.linalg import expm
-import random
+import matplotlib.pyplot as plt
+
 # Global variables
-I = np.matrix('1 0; 0 1')
-X = np.matrix('0 1; 1 0')
-Y = np.matrix('0 -1; 1 0')*complex(0,1)
-Z = np.matrix('1 0; 0 -1')
-paulis = [I,X,Y,Z]
+I = np.array([[1,0],[0,1]])
+X = np.array([[0,1],[1,0]])
+Y = np.array([[0,-1],[1,0]])*complex(0,1)
+Z = np.array([[1,0],[0,-1]])
 
 # take the kronecker (tensor) product of a list of matrices
 def kron(m):
     if len(m) == 1:
         return m
-    total = np.kron(m[0], m[1])
+    total = np.kron(m[1], m[0])
     if len(m) > 2:
         for i in range(2, len(m)):
-            total = np.kron(total, m[i])
+            total = np.kron(m[i], total)
     return total
 
 def num_ones(n):
@@ -32,52 +31,50 @@ def num_ones(n):
 
 def expectation(G, rho):
     init = [I]*len(G.nodes)
-    total = complex(1,0)*np.zeros([2**len(G.nodes), 2**len(G.nodes)])
+    C = complex(1,0)*np.zeros([2**len(G.nodes), 2**len(G.nodes)])
     for i in range(0, len(G.nodes)):
         init[i] = Z
-        total -= G.degree[len(G.nodes) - 1 - i]*kron(init)
+        C += G.degree[i]*kron(init)
         # reset
         init = [I]*len(G.nodes)
 
     init = [I]*len(G.nodes)
     for edge in G.edges:
-        init[len(G.nodes) - 1 - edge[0]] = Z
-        init[len(G.nodes) - 1 - edge[1]] = Z
-        total -= kron(init)
+        init[edge[0]] = Z
+        init[edge[1]] = Z
+        C += kron(init)
         # reset
         init = [I]*len(G.nodes)
 
-    total += 3*np.identity(2**len(G.nodes))
-    total = total/4
-
-    final = np.trace(np.asmatrix(total)*np.asmatrix(rho))
-    return np.real(final)
+    #C_exp = np.matmul(np.transpose(np.conj(state)), np.matmul(C, state))
+    C_exp = np.trace(np.matmul(C, rho))
+    return np.real(-(0.25)*(C_exp - 3*G.number_of_edges()))
 
 def phase_separator(rho, G, gamma):
     init = [I]*len(G.nodes)
     total = complex(1,0)*np.zeros([2**len(G.nodes), 2**len(G.nodes)])
     for i in range(0, len(G.nodes)):
-        init[i] = Z    
-        total += G.degree[len(G.nodes) - 1 - i]*kron(init)
-        # reset
+        init[i] = Z
+        total += G.degree[i]*kron(init)
         init = [I]*len(G.nodes)
     
-    total = np.array(total).diagonal()
-    eigdz = np.diag(np.exp(np.complex(0,1)*gamma*total))
-    rho = np.asmatrix(np.conj(eigdz))*rho*np.asmatrix(eigdz)
+    eigdz = np.diag(np.exp(np.complex(0,-1)*gamma*total.diagonal()))
+    rho = np.matmul(eigdz, np.matmul(rho, np.transpose(np.conj(eigdz))))
+    rho.real[abs(rho.real) < 1e-16] = 0.0
+    rho.imag[abs(rho.imag) < 1e-16] = 0.0
 
     init = [I]*len(G.nodes)
     total = complex(1,0)*np.zeros([2**len(G.nodes), 2**len(G.nodes)])
     for edge in G.edges:
-        init[len(G.nodes) - 1 - edge[0]] = Z
-        init[len(G.nodes) - 1 - edge[1]] = Z
+        init[edge[0]] = Z
+        init[edge[1]] = Z
         total += kron(init)
-        # reset
         init = [I]*len(G.nodes)
         
-    total = np.array(total).diagonal()
-    eigzz = np.diag(np.exp(np.complex(0,1)*gamma*total))
-    rho = np.asmatrix(np.conj(eigzz))*rho*np.asmatrix(eigzz)
+    eigzz = np.diag(np.exp(np.complex(0,-1)*gamma*total.diagonal()))
+    rho = np.matmul(eigzz, np.matmul(rho, np.transpose(np.conj(eigzz))))
+    rho.real[abs(rho.real) < 1e-16] = 0.0
+    rho.imag[abs(rho.imag) < 1e-16] = 0.0
     return rho
 
 def ring_mixer(rho, G, beta):
@@ -95,19 +92,21 @@ def ring_mixer(rho, G, beta):
         total += kron(init)
         init = [I]*len(G.nodes)
     
-    eibxxyy = expm(np.complex(0,1)*beta*total)
-    rho = np.asmatrix(np.conj(eibxxyy))*np.asmatrix(rho)*np.asmatrix(eibxxyy)
+    eibxxyy = expm(np.complex(0,-1)*beta*total)
+    rho = np.matmul(eibxxyy, np.matmul(rho, np.transpose(np.conj(eibxxyy))))
+    rho.real[abs(rho.real) < 1e-16] = 0.0
+    rho.imag[abs(rho.imag) < 1e-16] = 0.0
     return rho
 
 def prep(rho, G, k):
     for i in range(0, 2**len(G.nodes)):
         if num_ones(i) == k:
             rho[i, i] = 1
-    #rho = rho/int(comb(len(G.nodes), k))
+    rho = rho/int(comb(len(G.nodes), k))
     return rho
 
 def qaoa(G, k, gamma, beta0, beta1, p):
-    rho = np.asmatrix(np.zeros([2**len(G.nodes), 2**len(G.nodes)]))
+    rho = np.zeros([2**len(G.nodes), 2**len(G.nodes)])
     rho = prep(rho, G, k)
     rho = ring_mixer(rho, G, beta0)
     for i in range(p):
@@ -126,9 +125,7 @@ def ring_ps_ring(G, k, p, num_steps):
     beta0 = pi/(num_steps+1)
     beta1 = pi/(num_steps+1)
     exp_c = 0
-    exp_arr = []
     angle_arr = []
-    angles = []
 
     for i in range(0, num_steps):
         for j in range(0, num_steps):
@@ -140,7 +137,6 @@ def ring_ps_ring(G, k, p, num_steps):
                     angles.append(gamma)
                     angles.append(beta0)
                     angles.append(beta1)
-                print(-1*exp_c)
                 gamma += pi/(2*(num_steps+1))
             gamma = pi/(2*(num_steps+1))
             beta0 += pi/(num_steps+1)
@@ -149,46 +145,9 @@ def ring_ps_ring(G, k, p, num_steps):
 
     return -1*exp_c, angle_arr
 
-'''
-def ring_ps_ring_old(G, k, p, num_steps):
-    gamma = pi/(2*(num_steps+1))
-    beta0 = pi/(num_steps+1)
-    beta1 = pi/(num_steps+1)
-    exp_c = 0
-    exp_arr = []
-    angle_arr = []
-    angles = []
-
-    num_init = int(comb(len(G.nodes), k))
-    for m in range(0, num_init):
-        for i in range(0, num_steps):
-            for j in range(0, num_steps):
-                for l in range(0, num_steps):
-                    optimal = minimize(opt, [gamma, beta0, beta1], args=(G, k, p, m), bounds=[[0,pi/2],[0,pi],[0,pi]])
-                    if exp_c > optimal.fun:
-                        exp_c = optimal.fun
-                        angles = []
-                        angles.append(gamma)
-                        angles.append(beta0)
-                        angles.append(beta1)
-                    gamma += pi/(2*(num_steps+1))
-                gamma = pi/(2*(num_steps+1))
-                beta0 += pi/(num_steps+1)
-            beta0 = pi/(num_steps+1)
-            beta1 += pi/(num_steps+1)
-        exp_arr.append(exp_c*-1)
-        exp_c = 0
-        angle_arr.append(angles)
-
-    avg = 0
-    for entry in exp_arr:
-        avg += entry/num_init
-    return avg, angle_arr
-'''
-
 if __name__ == '__main__':
     G = nx.graph_atlas(6)
-    ring_ps_ring(G, int(len(G.nodes)/2), 1, 3)
-
-    rho = qaoa(Gkp[0], Gkp[1], args[0], args[1], args[2], Gkp[2])
-    exp = expectation(Gkp[0], rho)
+    #nx.draw(G, with_labels=True, font_weight='bold')
+    #plt.show()
+    exp, angles = ring_ps_ring(G, int(len(G.nodes)/2), 1, 3)
+    print('exp: ' + str(exp))
