@@ -14,7 +14,7 @@ def get_exp(G, gi, k, p, num_steps, method, method_string):
     exp = None
     found = False
     exp_dict = {}
-    path = 'data/' + method_string + '.exp'
+    path = '/home/montypylon/lanl/qaoa-kvertex/hpc/data/' + method_string + '.exp'
 
     if os.path.exists(path):
         with open(path, 'rb') as f:
@@ -24,9 +24,10 @@ def get_exp(G, gi, k, p, num_steps, method, method_string):
                 if key in exp_dict:
                     found = True
                     exp = exp_dict[key]
-            except: 
+            except Exception as e:
                 print('Error opening dictionary for ' + method_string)
-       
+                print(e)
+
     if not found or exp is None:
         exp, angles = method(G, k, p, num_steps)
         key = tuple([gi, k])
@@ -38,7 +39,7 @@ def get_exp(G, gi, k, p, num_steps, method, method_string):
 def compare():
     # min: 1, max: 995
     start = 1
-    end = 3
+    end = 10
     p = 1
     num_steps = 25
     x = []
@@ -52,13 +53,18 @@ def compare():
         k = int(len(G.nodes)/2)
         if k == 0:
             k = 1
-        x.append('gi=' + str(gi) + ',n=' + str(len(G.nodes)) + ',k=' + str(k))
-        #x.append(gi)
+        #x.append('gi=' + str(gi) + ',n=' + str(len(G.nodes)) + ',k=' + str(k))
+        x.append(gi)
         y1.append(get_exp(G, gi, k, p, num_steps, brute_force, 'brute_force'))
         y2.append(get_exp(G, gi, k, p, num_steps, dicke_ps_ring, 'dicke_ps_ring'))
         y3.append(get_exp(G, gi, k, p, num_steps, ring_ps_ring, 'ring_ps_ring'))
 
-    plt.plot(x, y1, '-bo', label='optimal')
+    for i in range(0, len(y1)):
+        y2[i] /= y1[i]
+        y3[i] /= y1[i]
+        y1[i] = 1
+
+    plt.plot(x, y1, '-b', label='optimal')
     plt.plot(x, y2, '-go', label='dicke_ps_ring')
     plt.plot(x, y3, '-ro', label='ring_ps_ring')
 

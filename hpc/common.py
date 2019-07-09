@@ -85,8 +85,7 @@ def phase_separator(state, C, gamma):
 
 def ring_mixer(state, M, beta):
     eibxxyy = expm(np.complex(0,-1)*beta*M)
-    state = np.matmul(eibxxyy, state)
-    return state
+    return np.matmul(eibxxyy, state)
 
 def prep(state, G, k, m):
     counter = 0

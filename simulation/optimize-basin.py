@@ -29,7 +29,8 @@ def draw():
 def generate_graph():
     global G
     # Pick a random graph from the atlas
-    gi = random.randint(2,995)
+    #gi = random.randint(2,995)
+    gi = 200
     print('Graph index: ' + str(gi))
     G = nx.read_gpickle('../mixer-phase/benchmarks/atlas/' + str(gi) + '.gpickle')
     p = Process(target=draw)
