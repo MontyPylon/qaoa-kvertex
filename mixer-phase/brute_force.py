@@ -1,10 +1,7 @@
 import networkx as nx
-import matplotlib.pyplot as plt
 import numpy as np
-from scipy.special import comb
 from itertools import combinations 
 import random
-from multiprocessing import Process
 
 def generate_graph():
     # Pick a random graph from the atlas
@@ -16,6 +13,7 @@ def generate_graph():
 def brute_force(G, k, p, n):
     comb = combinations(G.nodes, k)
     highest = 0
+    best_group = []
     for group in list(comb):
         score = 0
         for edge in G.edges:
@@ -25,8 +23,9 @@ def brute_force(G, k, p, n):
                     break
         if score > highest:
             highest = score
-    return highest
+            best_group = list(group)
+    return highest, best_group
 
 if __name__ == '__main__':
     G, gi = generate_graph()
-    brute_force(G, int(len(G.nodes)/2))
+    brute_force(G, int(len(G.nodes)/2), 0, 0)

@@ -71,8 +71,8 @@ def compare():
     plt.legend()
 
     plt.xlabel('Graph atlas index')
-    plt.ylabel('<C>: expectation of number of edges touched')
-    plt.title('<C> vs. graph atlas\np=' + str(p) + ', k=floor(n/2), iter=' + str(num_steps))
+    plt.ylabel('Approximation ratio')
+    plt.title('Approximation ratio vs. graph atlas\np=' + str(p) + ', k=floor(n/2), iter=' + str(num_steps))
     plt.show()
         
 if __name__ == '__main__':

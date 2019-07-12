@@ -20,15 +20,15 @@ def qaoa(p, g_list, b_list):
     return common.expectation(G, state)
 
 if __name__ == '__main__':
-    G = nx.read_gpickle('atlas/200.gpickle')
+    G = nx.read_gpickle('atlas/502.gpickle')
     C = common.create_C(G)
     M = common.create_M(G)
     k = int(len(G.nodes)/2)
 
     num_samples = 1000
 
-    max_p = 20
-    for p in range(1, max_p):
+    max_p = 101
+    for p in range(100, max_p):
         found = False
         data, g_list, b_list = [], [], []
         print('--------- p = ' + str(p) + '----------')
@@ -57,14 +57,16 @@ if __name__ == '__main__':
         avg = np.round(np.average(data), 3)
         std = np.round(np.std(data), 3)
         col = [random.uniform(0,1), random.uniform(0,1), random.uniform(0,1)]
-        plt.hist(data, bins=100, range=[4,8], color=col)
+        plt.hist(data, bins=100, range=[5,10], color=col)
         plt.axvline(x=np.max(data), color=col)
-        plt.title('<C> histogram for p = ' + str(p) + ', gi=200, samples=' + str(num_samples) \
+        plt.axvline(x=avg, color=col)
+        plt.title('<C> histogram for p = ' + str(p) + ', gi=502, samples=' + str(num_samples) \
                   + '\navg=' + str(avg) + ', std=' + str(std))
         plt.xlabel('<C>')
         plt.ylabel('Counts of <C>')
         axes = plt.gca()
         axes.set_ylim([0, 130])
-        #plt.savefig('hist/fig/p' + str(p) + '.png')
-        plt.show()
+        plt.savefig('hist/fig/p' + str(p) + '.png')
+        #plt.show()
+        plt.cla()
 
