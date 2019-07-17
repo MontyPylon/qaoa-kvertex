@@ -50,8 +50,8 @@ def dicke(n, k):
 
 def f(t, n, k):
     t = t*pi
-    #state = prep(n, k)
-    state = dicke(n, k)
+    state = prep(n, k)
+    #state = dicke(n, k)
     state = common.mixer(state, common.create_ring_M(n), t)
     state = [np.real(np.conj(s)*s) for s in state]
     probs = []
@@ -61,8 +61,8 @@ def f(t, n, k):
     return probs
 
 def amplitudes():
-    n = 5
-    k = 2
+    n = 2
+    k = 1
     shell = [[] for x in range(int(comb(n, k)))]
     t = np.arange(0, 1, 0.005)
 

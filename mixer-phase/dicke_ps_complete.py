@@ -25,5 +25,5 @@ def main(G, k, p, num_steps):
 
 if __name__ == '__main__':
     G = nx.graph_atlas(6)
-    exp, angles = dicke_ps_complete(G, int(len(G.nodes)/2), 1, 20)
+    exp, angles = main(G, int(len(G.nodes)/2), 1, 20)
     print('exp: ' + str(exp))

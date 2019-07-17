@@ -77,6 +77,7 @@ def create_ring_M(n):
         init[(i+1) % n] = Y
         M += kron(init)
         init = [I]*n
+        if n == 2: break
     return M
 
 def create_complete_M(n):
@@ -84,17 +85,17 @@ def create_complete_M(n):
     M = complex(1,0)*np.zeros([2**n, 2**n])
     for i in range(0, n):
         for j in range(0, n):
-            if i == j: continue
-            # X_i X_{j}
-            init[i] = X
-            init[j] = X
-            M += kron(init)
-            init = [I]*n
-            # Y_i Y_{j}
-            init[i] = Y
-            init[j] = Y
-            M += kron(init)
-            init = [I]*n
+            if i > j:
+                # X_i X_{j}
+                init[i] = X
+                init[j] = X
+                M += kron(init)
+                init = [I]*n
+                # Y_i Y_{j}
+                init[i] = Y
+                init[j] = Y
+                M += kron(init)
+                init = [I]*n
     return M
 
 def phase_separator(state, C, gamma):

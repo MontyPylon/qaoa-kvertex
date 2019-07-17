@@ -63,33 +63,51 @@ def create_C(G):
         init = [I]*len(G.nodes)
     return C.diagonal()
 
-def create_M(G):
-    init = [I]*len(G.nodes)
-    M = complex(1,0)*np.zeros([2**len(G.nodes), 2**len(G.nodes)])
-    for i in range(0, len(G.nodes)):
+def create_ring_M(n):
+    init = [I]*n
+    M = complex(1,0)*np.zeros([2**n, 2**n])
+    for i in range(0, n):
         # X_i X_{i+1}
         init[i] = X
-        init[(i+1) % len(G.nodes)] = X
+        init[(i+1) % n] = X
         M += kron(init)
-        init = [I]*len(G.nodes)
+        init = [I]*n
         # Y_i Y_{i+1}
         init[i] = Y
-        init[(i+1) % len(G.nodes)] = Y
+        init[(i+1) % n] = Y
         M += kron(init)
-        init = [I]*len(G.nodes)
+        init = [I]*n
+    return M
+
+def create_complete_M(n):
+    init = [I]*n
+    M = complex(1,0)*np.zeros([2**n, 2**n])
+    for i in range(0, n):
+        for j in range(0, n):
+            if i == j: continue
+            # X_i X_{j}
+            init[i] = X
+            init[j] = X
+            M += kron(init)
+            init = [I]*n
+            # Y_i Y_{j}
+            init[i] = Y
+            init[j] = Y
+            M += kron(init)
+            init = [I]*n
     return M
 
 def phase_separator(state, C, gamma):
     eiC = np.exp(np.complex(0,-1)*gamma*C)
     return np.multiply(eiC, state)
 
-def ring_mixer(state, M, beta):
+def mixer(state, M, beta):
     eibxxyy = expm(np.complex(0,-1)*beta*M)
     return np.matmul(eibxxyy, state)
 
 def prep(state, G, k, m):
     counter = 0
-    for i in range(0, 2**len(G.nodes)):
+    for i in range(0, 2**n):
         if num_ones(i) == k:
             # start with different initial states
             if m == counter:
@@ -98,8 +116,8 @@ def prep(state, G, k, m):
             counter += 1
     return state
 
-def dicke(state, G, k):
-    for i in range(0, 2**len(G.nodes)):
+def dicke(state, n, k):
+    for i in range(0, 2**n):
         if num_ones(i) == k:
-            state[i] = 1/(np.sqrt(comb(len(G.nodes), k)))
+            state[i] = 1/(np.sqrt(comb(n, k)))
     return state
