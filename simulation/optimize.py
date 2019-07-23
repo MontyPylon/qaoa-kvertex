@@ -254,6 +254,10 @@ def temp_map(k, p, opts, exp_c):
     cbar = ax.figure.colorbar(im, ax=ax)
     cbar.ax.set_ylabel('$\\langle C \\rangle$', rotation=-90, va="bottom")
 
+    axes = plt.gca()
+    axes.set_ylim([0, pi])
+    axes.set_xlim([0, pi/2])
+
     plt.xlabel('$\\gamma$')
     plt.ylabel('$\\beta$')
     plt.title('$\\beta \\ vs \\ \\gamma$\nn=' + str(num_nodes) + ', k=' + str(k) + ', p=' + str(p) + ', grid_size=' + str(num_steps) + 'x' + str(num_steps))
