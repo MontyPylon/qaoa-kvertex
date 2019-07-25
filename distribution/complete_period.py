@@ -1,14 +1,43 @@
 import numpy as np
+import sys
+sys.path.insert(0, '/home/montypylon/lanl/qaoa-kvertex/mixer-phase')
 import common
 from scipy.linalg import expm
 from math import pi
 
-def main():
-    n = 3
-    k = 1
+def check(n, beta):
+    print('creating mixer')
     eps = 0.001
-    start = 0
-    end = 10
+    M = common.create_complete_M(n)
+    print('exponentiating mixer')
+    ring = expm(np.complex(0,-1)*beta*pi*M)
+    total = 0
+
+    print('checking mixer')
+    max = 2**n
+    # check if all off diagonal elements are 0
+    for i in range(max):
+        for j in range(max):
+            if i != j:
+                total += np.real(ring[i,j]*np.conj(ring[i,j]))
+                if total > eps:
+                    return False
+    # Now check phases are equal
+    noteq = False
+    for i in range(1, max):
+        if (np.real(ring[0,0]) - np.real(ring[i,i])) > eps or (np.imag(ring[0,0]) - np.imag(ring[i,i])) > eps:
+            return False
+
+    if total < 1e-12: print('******************************')
+    print('b: ' + str(beta) + '\t t: ' + str(total) + '\t t*pi: ' + str(beta*pi))
+    return True
+
+def main():
+    n = 10
+    #k = 1
+    eps = 0.001
+    start = 0.99
+    end = 1.01
     M = common.create_complete_M(n)
     period = []
     step = 0.01
@@ -60,6 +89,10 @@ def test():
 
 
 if __name__ == '__main__':
-    main()
+    for j in range(2,20):
+        print('----------------')
+        print('j=' + str(j) + ', ' + str(check(j, 1)))
+        print('----------------')
+    #main()
     #half()
     #test()

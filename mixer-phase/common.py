@@ -1,6 +1,8 @@
 import numpy as np
+import networkx as nx
 from scipy.special import comb
 from scipy.linalg import expm
+import random
 
 # Global variables
 I = np.array([[1,0],[0,1]])
@@ -106,6 +108,13 @@ def mixer(state, M, beta):
     eibxxyy = expm(np.complex(0,-1)*beta*M)
     return np.matmul(eibxxyy, state)
 
+def get_stuff(gi):
+    G = nx.read_gpickle('../benchmarks/atlas/' + str(gi) + '.gpickle')
+    C = create_C(G)
+    M = create_complete_M(len(G.nodes))
+    k = int(len(G.nodes)/2)
+    return G, C, M, k
+
 def prep(state, G, k, m):
     counter = 0
     for i in range(0, 2**n):
@@ -117,8 +126,28 @@ def prep(state, G, k, m):
             counter += 1
     return state
 
-def dicke(state, n, k):
+def dicke(n, k):
+    state = np.zeros(2**n)
     for i in range(0, 2**n):
         if num_ones(i) == k:
             state[i] = 1/(np.sqrt(comb(n, k)))
     return state
+
+def MLHS(p, num_samples, lower_g, upper_g, lower_b, upper_b):
+    range_g = upper_g - lower_g
+    range_b = upper_b - lower_b
+    g = [(lower_g + (range_g/num_samples)*(i + 0.5)) for i in range(num_samples)]
+    b = [(lower_b + (range_b/num_samples)*(i + 0.5)) for i in range(num_samples)]
+    valid_g = [[i for i in range(num_samples)] for j in range(p)]
+    valid_b = [[i for i in range(num_samples)] for j in range(p)]
+    sample_g = [[] for j in range(num_samples)]
+    sample_b = [[] for j in range(num_samples)]
+    for j in range(p):
+        for i in range(num_samples):
+            vg = random.randint(0, len(valid_g[j])-1)
+            vb = random.randint(0, len(valid_b[j])-1)
+            sample_g[i].append(g[valid_g[j][vg]])
+            sample_b[i].append(b[valid_b[j][vb]])
+            del valid_g[j][vg]
+            del valid_b[j][vb]
+    return sample_g, sample_b

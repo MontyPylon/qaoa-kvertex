@@ -43,13 +43,21 @@ def plot_gamma():
     left_g7 = [0.052478411856661994, 0.14117378610161418, 0.22781119464414282, 0.2894308319998555, 0.32935789316454034, 0.3833566443018232, 0.43268706092094383]
 
 
-    plt.plot([1], left_g1, '-o', label='p=1')
-    plt.plot([1,2], left_g2, '-o', label='p=2')
-    plt.plot([1,2,3], left_g3, '-o', label='p=3')
-    plt.plot([1,2,3,4], left_g4, '-o', label='p=4')
-    plt.plot([1,2,3,4,5], left_g5, '-o', label='p=5')
-    plt.plot([1,2,3,4,5,6], left_g6, '-o', label='p=6')
-    plt.plot([1,2,3,4,5,6,7], left_g7, '-o', label='p=7')
+    #plt.plot([1], left_g1, '-o', label='p=1')
+    #plt.plot([1,2], left_g2, '-o', label='p=2')
+    #plt.plot([1,2,3], left_g3, '-o', label='p=3')
+    #plt.plot([1,2,3,4], left_g4, '-o', label='p=4')
+    #plt.plot([1,2,3,4,5], left_g5, '-o', label='p=5')
+    #plt.plot([1,2,3,4,5,6], left_g6, '-o', label='p=6')
+    #plt.plot([1,2,3,4,5,6,7], left_g7, '-o', label='p=7')
+
+    plt.plot([0], left_g1, '-o', label='p=1')
+    plt.plot([0,1], left_g2, '-o', label='p=2')
+    plt.plot([0,1/2,1], left_g3, '-o', label='p=3')
+    plt.plot([0,1/3,2/3,1], left_g4, '-o', label='p=4')
+    plt.plot([0,1/4,2/4,3/4,1], left_g5, '-o', label='p=5')
+    plt.plot([0,1/5,2/5,3/5,4/5,1], left_g6, '-o', label='p=6')
+    plt.plot([0,1/6,2/6,3/6,4/6,5/6,1], left_g7, '-o', label='p=7')
 
     plt.legend()
     plt.gca().set_ylim([0, pi/4])
@@ -59,5 +67,5 @@ def plot_gamma():
 if __name__ == '__main__':
     #plt.plot([1,2,3,4,5,6,7], [8.503162903355406, 8.800506134417677, 8.952913838859514, 8.984216297214182, 8.993237586035384, 8.998175490445554, 8.99978203457083])
     #plt.show()
-    #plot_gamma()
-    plot_beta()
+    plot_gamma()
+    #plot_beta()
