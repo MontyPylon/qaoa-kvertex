@@ -8,8 +8,8 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
 
-n = 5
-samples = 2**9
+n = 7
+samples = 2**3
 num_cores = 8
 
 if size == 1:
@@ -23,8 +23,8 @@ if size == 1:
     print('seq ' + ' took ' + str(t2-t1))
 else:
     t1 = time.time()
-    np.random.seed(1)
-    for j in range(samples*4):
+    np.random.seed(rank)
+    for j in range(samples):
         A = np.random.rand(2**n, 2**n)
         B = expm(np.complex(0,1)*A)
     t2 = time.time()

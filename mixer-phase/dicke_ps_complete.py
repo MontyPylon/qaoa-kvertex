@@ -7,8 +7,7 @@ import common
 
 def qaoa(a, gb):
     G, C, M, k, p = a[0], a[1], a[2], a[3], a[4]
-    state = np.zeros(2**len(G.nodes))
-    state = common.dicke(state, len(G.nodes), k)
+    state = common.dicke(len(G.nodes), k)
     for i in range(p):
         state = common.phase_separator(state, C, gb[i])
         state = common.mixer(state, M, gb[p+i])

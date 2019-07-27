@@ -6,7 +6,6 @@ mpi4py
 create sequential and multicore versions by Friday
 change seed per core
 
-
 num_samples = 10, iterations = 0, gi = 91, p = 1
 sequential = 0.766 s
 parallel pool = 48.72 s

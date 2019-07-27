@@ -3,6 +3,7 @@ import networkx as nx
 from scipy.special import comb
 from scipy.linalg import expm
 import random
+from itertools import combinations
 
 # Global variables
 I = np.array([[1,0],[0,1]])
@@ -151,3 +152,46 @@ def MLHS(p, num_samples, lower_g, upper_g, lower_b, upper_b):
             del valid_g[j][vg]
             del valid_b[j][vb]
     return sample_g, sample_b
+
+def brute_force(gi):
+    G = nx.read_gpickle('../benchmarks/atlas/' + str(gi) + '.gpickle')
+    k = int(len(G.nodes)/2)
+    comb = combinations(G.nodes, k)
+    highest = 0
+    for group in list(comb):
+        score = 0
+        for edge in G.edges:
+            for v in group:
+                if v == edge[0] or v == edge[1]:
+                    score += 1
+                    break
+        if score > highest:
+            highest = score
+    return highest
+
+def random_k_state(n, k):
+    state = np.zeros(2**n)
+    num_k = int(comb(n, k))
+    index = random.randint(0, num_k-1)
+    counter = 0
+    for i in range(0, 2**n):
+        if num_ones(i) == k:
+            # start with different initial states
+            if index == counter:
+                state[i] = 1
+                break
+            counter += 1
+    return state
+
+# pick an m in range: [0, (n choose k)-1]
+def select_k_state(n, k, m):
+    state = np.zeros(2**n)
+    counter = 0
+    for i in range(0, 2**n):
+        if num_ones(i) == k:
+            # start with different initial states
+            if m == counter:
+                state[i] = 1
+                break
+            counter += 1
+    return state
