@@ -116,6 +116,13 @@ def get_stuff(gi):
     k = int(len(G.nodes)/2)
     return G, C, M, k
 
+def get_stuff_ring(gi):
+    G = nx.read_gpickle('../benchmarks/atlas/' + str(gi) + '.gpickle')
+    C = create_C(G)
+    M = create_ring_M(len(G.nodes))
+    k = int(len(G.nodes)/2)
+    return G, C, M, k
+
 def prep(state, G, k, m):
     counter = 0
     for i in range(0, 2**n):
