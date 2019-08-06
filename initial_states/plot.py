@@ -1,17 +1,44 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
+import os
 
 def plot():
+    total_c = []
+    total_i = []
+    for gi in range(160, 955):
+        path = 'complete/' + str(gi) + '.mpi'
+        data = []
+        if os.path.exists(path):
+            with open(path, 'rb') as f:
+                try:
+                    data = pickle.load(f)
+                except Exception as e:
+                    print(e)
+            if data: total_c.append(data)
+
+        path = 'init-complete/' + str(gi) + '.mpi'
+        data = []
+        if os.path.exists(path):
+            with open(path, 'rb') as f:
+                try:
+                    data = pickle.load(f)
+                except Exception as e:
+                    print(e)
+            if data: total_i.append(data)
+
+    x = [i for i in range(6)]
+    for i in range(len(total_c)):
+        #plt.plot(x, total_c[i], '-o')
+        plt.plot(x, total_i[i][0], '-o')
+    print(total_c)
+    print(total_i)
+    plt.show()
+
+def old_plot():
     data = pickle.load(open('data/91.mpi-k', 'rb'))
     # [gi, [1,...,p], [avg], [std], [error], num_samples, num_cores]
     print(data)
-    #data[1].append(6)
-    #data[2].append(0.93225951675636076)
-    #data[3].append(0.0032604855984546214)
-    #data[4].append(0.0013998351502698507)
-    #print(data)
-    #pickle.dump(data, open('data/91.mpi-k2', 'wb'))
 
     dicke = [8.503162903355406, 8.800506134417677, 8.952913838859514, 8.984216297214182, 8.993237586035384, 8.998175490445554]#, 8.99978203457083]
     dicke = [i/9 for i in dicke]
