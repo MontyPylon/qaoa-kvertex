@@ -5,8 +5,7 @@ from scipy.linalg import expm
 import random
 from itertools import combinations
 
-def expectation(G, state):
-    k = int(len(G.nodes)/2)
+def expectation(G, k, state):
     total = 0
     values = []
     for i in range(2**(len(G.nodes))):
@@ -24,7 +23,7 @@ def expectation(G, state):
         total += f*prob
     return total
 
-def prob(G, state):
+def prob(G, k, state):
     k = int(len(G.nodes)/2)
     total = 0
     best = brute_force(G)
@@ -45,9 +44,8 @@ def prob(G, state):
             total += prob
     return total
 
-def create_C(G):
+def create_C(G, k):
     n = len(G.nodes)
-    k = int(n/2)
     size = int(comb(n, k))
     diag = np.zeros((size))
 
@@ -82,8 +80,7 @@ def next_to(n, i):
         if b[ii] == '1' and b[(ii+1) % len(b)] == '1': return True
     return False
 
-def create_ring_M(n):
-    k = int(n/2)
+def create_ring_M(n, k):
     size = int(comb(n, k))
     m = complex(1,0)*np.zeros((size, size))
     values = []
@@ -99,8 +96,7 @@ def create_ring_M(n):
                         m[j,i] = 2
     return m
 
-def create_complete_M(n):
-    k = int(n/2)
+def create_complete_M(n, k):
     size = int(comb(n, k))
     m = complex(1,0)*np.zeros((size, size))
     values = []
@@ -125,27 +121,25 @@ def mixer(state, M, beta):
     return np.matmul(eibxxyy, state)
 
 def get_complete(gi):
-    G = nx.read_gpickle('../benchmarks/atlas/' + str(gi) + '.gpickle')
+    G = nx.read_gpickle('../graphs/atlas/' + str(gi) + '.gpickle')
     k = int(len(G.nodes)/2)
-    C = create_C(G)
-    M = create_complete_M(len(G.nodes))
+    C = create_C(G, k)
+    M = create_complete_M(len(G.nodes), k)
     return G, C, M, k
 
 def get_ring(gi):
-    G = nx.read_gpickle('../benchmarks/atlas/' + str(gi) + '.gpickle')
+    G = nx.read_gpickle('../graphs/atlas/' + str(gi) + '.gpickle')
     k = int(len(G.nodes)/2)
-    C = create_C(G)
-    M = create_ring_M(len(G.nodes))
+    C = create_C(G, k)
+    M = create_ring_M(len(G.nodes), k)
     return G, C, M, k
 
-def dicke(n):
-    k = int(n/2)
+def dicke(n, k):
     size = int(comb(n, k))
     state = np.ones(size)*(1/np.sqrt(size))
     return state
 
-def random_k_state(n):
-    k = int(n/2)
+def random_k_state(n, k):
     size = int(comb(n, k))
     state = np.zeros(size)
     index = random.randint(0, size-1)
@@ -171,8 +165,7 @@ def MLHS(p, num_samples, lower_g, upper_g, lower_b, upper_b):
             del valid_b[j][vb]
     return sample_g, sample_b
 
-def brute_force(G):
-    k = int(len(G.nodes)/2)
+def brute_force(G, k):
     comb = combinations(G.nodes, k)
     highest = 0
     for group in list(comb):

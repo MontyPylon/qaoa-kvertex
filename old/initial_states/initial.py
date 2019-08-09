@@ -21,7 +21,7 @@ def random_k_state(n, k):
     counter = 0
     for i in range(0, 2**n):
         if common.num_ones(i) == k:
-            # start with different initial states
+            # start with different initial-vs-dicke states
             if index == counter:
                 state[i] = 1
                 break
