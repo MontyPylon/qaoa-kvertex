@@ -10,14 +10,15 @@ import datetime
 import random
 import os
 from multiprocessing import Process
+from scipy.special import comb
 
 G = None
 
-def qaoa(gamma, beta, G, C, M):
-    state = common.dicke(len(G.nodes))
+def qaoa(gamma, beta, G, C, M, k):
+    state = common.dicke(len(G.nodes), k)
     state = common.phase_separator(state, C, gamma)
     state = common.mixer(state, M, beta)
-    return common.expectation(G, state)
+    return common.expectation(G, k, state)
 
 def draw():
     global G
@@ -26,10 +27,15 @@ def draw():
 
 def temp_map():
     global G
-    for gi in range(91, 92):
+    for gi in range(404, 408):
         print('\t' + str(gi))
-        #G = nx.gnp_random_graph(7, 0.5)
-        G, C, M, k = common.get_complete(gi)
+        #G = nx.gnp_random_graph(11, 0.5)
+        #k = int(len(G.nodes)/2)
+        #k = 1
+        #C = common.create_C(G, k)
+        #M = common.create_ring_M(len(G.nodes), k)
+        #G, C, M, k = common.get_complete(gi)
+        #G, C, M, k = common.get_ring(gi)
 
         #p = Process(target=draw)
         #p.start()
@@ -37,7 +43,7 @@ def temp_map():
         num_steps = 30
         gamma, beta = 0, 0
         g_max = 2*pi
-        b_max = pi/2
+        b_max = 2*pi
         g_list, grid = [], []
         grid_max = 0
         fig, ax = plt.subplots()
@@ -45,7 +51,7 @@ def temp_map():
         print('0/' + str(num_steps) + '\t' + str(datetime.datetime.now().time()))
         for i in range(0, num_steps):
             for j in range(0, num_steps):
-                val = qaoa(gamma, beta, G, C, M)
+                val = qaoa(gamma, beta, G, C, M, k)
                 g_list.append(val)
                 if grid_max < val: grid_max = val
                 gamma += g_max/(num_steps-1)
@@ -68,7 +74,7 @@ def temp_map():
         plt.rc('figure', titlesize=SIZE)  # fontsize of the figure title
 
 
-        im = ax.imshow(grid, aspect='auto', extent=(0, 2*pi, 0, pi/2), interpolation='gaussian', cmap=cm.inferno_r)
+        im = ax.imshow(grid, aspect='auto', extent=(0, g_max, 0, b_max), interpolation='gaussian', cmap=cm.inferno_r)
         cbar = ax.figure.colorbar(im, ax=ax, ticks=[])
         #cbar.ax.set_ylabel('$\\langle H_P \\rangle$', rotation=0, va="bottom")
         cbar.ax.get_yaxis().labelpad = 25

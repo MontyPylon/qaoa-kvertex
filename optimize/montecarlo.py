@@ -12,11 +12,11 @@ import time
 
 def qaoa(gb, *a):
     G, C, M, k, p = a[0], a[1], a[2], a[3], a[4]
-    state = common.dicke(len(G.nodes))
+    state = common.dicke(len(G.nodes), k)
     for i in range(p):
         state = common.phase_separator(state, C, gb[i])
         state = common.mixer(state, M, gb[p+i])
-    return -common.expectation(G, state)
+    return -common.expectation(G, k, state)
 
 def neldermead(G, C, M, k, p, angles, eps):
     options = {'disp': False, 'maxfev': 100, 'fatol': eps, 'adaptive': True}
@@ -62,7 +62,7 @@ def basin(gi, p, s):
         angles = [0 for _ in range(2*p)]
         opt = {'disp': None, 'gtol': eps, 'ftol': eps}
         kwargs = {'method': 'L-BFGS-B', 'args': (G, C, M, k, p), 'bounds': bounds, 'options': opt}
-        optimal = basinhopping(qaoa, angles, niter=10, minimizer_kwargs=kwargs, disp=False)
+        optimal = basinhopping(qaoa, angles, niter=200, minimizer_kwargs=kwargs, disp=False)
         total_eval += optimal.nfev
         print(total_eval)
         if -optimal.fun > best_exp + eps:
@@ -73,10 +73,10 @@ def basin(gi, p, s):
     return best_exp, best_angles
 
 if __name__ == '__main__':
-    gi = 91
+    gi = 404
     p = 1
-    s = 1000
+    s = 100
     for p in range(1,20):
-        rank_exp, rank_angles = basin(gi, p, s)
+        rank_exp, rank_angles = basin(gi, p, s*(3**p))
         print('best_exp: ' + str(rank_exp))
 

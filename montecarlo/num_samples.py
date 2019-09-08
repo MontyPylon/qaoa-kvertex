@@ -30,11 +30,15 @@ def next_level(G, C, M, k, p, prev_exp):
     return best_exp, total_eval
 
 if __name__ == '__main__':
-    gi = 400
+    random.seed(4)
+    gi = random.randint(163,955)
+    print('gi = ' + str(gi))
     G, C, M, k = common.get_complete(gi)
-    s = 1000
+    best_sol = common.brute_force(G, k)
+    s = 50
     exp = [0]*s
     prev_best = 0
+    prev = []
     samples = []
     error = []
 
@@ -44,10 +48,12 @@ if __name__ == '__main__':
             new_exp, num_samples = next_level(G, C, M, k, p, prev_best)
             exp[i] = new_exp
             sample_vec.append(num_samples)
-            if i % 50 == 0: print('\t i: ' + str(i) + ', avg: ' + str(np.average(sample_vec)))
+            if i % 10 == 0: print('\ti: ' + str(i) + '\tavg: ' + str(np.average(sample_vec)) \
+                                  + '\tstd: ' + str(np.std(sample_vec)) + '\terr: ' + str(2.576*np.std(sample_vec)/np.sqrt(i+1)))
         prev_best = np.average(exp)
+        prev.append(prev_best/best_sol)
         print('new-avg: ' + str(prev_best))
         samples.append(np.average(sample_vec))
         error.append(2.576*np.std(sample_vec)/np.sqrt(s))
         print('samples: ' + str(np.average(sample_vec)) + '\t std: ' + str(np.std(sample_vec)) + '\t error: ' + str(2.576*np.std(sample_vec)/np.sqrt(s)))
-        pickle.dump([samples, error, ], open('data/samples', 'wb'))
+        pickle.dump([samples, error, prev], open('data/' + str(gi) + '.samples', 'wb'))

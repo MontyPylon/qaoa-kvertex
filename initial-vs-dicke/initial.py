@@ -123,4 +123,5 @@ if __name__ == '__main__':
     #dicke_ring(gi)
     #initial_complete(gi)
     #initial_ring(gi)
+    rho_complete(gi)
     print('edit to not overwrite other data')
