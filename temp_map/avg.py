@@ -30,13 +30,13 @@ def temp_map():
     total = []
     #G = nx.gnp_random_graph(7, 0.6)
     for ii in range(1,100):
+        total = []
         #gi = random.randint(163, 955)
         #print(gi)
         #G = nx.read_gpickle('../graphs/atlas/' + str(gi) + '.gpickle')
-        num_nodes = 10
+        num_nodes = random.randint(5,10)
         G = nx.fast_gnp_random_graph(num_nodes, 0.5)
-        while not nx.is_connected(G):
-            G = nx.fast_gnp_random_graph(num_nodes, 0.5)
+        while not nx.is_connected(G): G = nx.fast_gnp_random_graph(num_nodes, 0.5)
         k = int(len(G.nodes)/2)
         C = common.create_C(G, k)
         M = common.create_complete_M(len(G.nodes), k)
@@ -81,8 +81,9 @@ def temp_map():
                 for j in range(len(total[0])):
                     total[i][j] += grid[i][j]
 
-        #temp = total
+        temp = total.copy()
 
+        '''
         temp = total.copy()
         temp_max = -1
         temp_min = -1
@@ -96,6 +97,7 @@ def temp_map():
         for i in range(len(total)):
             for j in range(len(total[0])):
                 temp[i][j] = (1/(temp_max-temp_min))*(temp[i][j] - temp_min)
+        '''
 
 
         '''
@@ -113,15 +115,14 @@ def temp_map():
         size = 15
         axis_size = 17
         im = ax.imshow(temp, aspect='auto', extent=(0, 2, 0, 0.5), interpolation='gaussian', cmap=cm.inferno_r)
-        cbar = ax.figure.colorbar(im, ax=ax, ticks=[0,0.5,1])
-        cbar.ax.tick_params(labelsize=size)
+        #cbar = ax.figure.colorbar(im, ax=ax, ticks=[])
+        #cbar.ax.tick_params(labelsize=size)
         #cbar.ax.set_ylabel('$\\langle H_P \\rangle$', rotation=0, va="bottom")
-        cbar.ax.get_yaxis().labelpad = 28
-        cbar.ax.set_ylabel('$\\langle H_P \\rangle$', rotation=0, fontsize=axis_size)
+        #cbar.ax.get_yaxis().labelpad = 28
+        #cbar.ax.set_ylabel('$\\langle H_P \\rangle$', rotation=0, fontsize=axis_size)
 
         plt.gca().set_xlabel('$\\gamma\,/\,\pi$', fontsize=axis_size)
         plt.gca().set_ylabel('$\\beta\,/\,\pi$', fontsize=axis_size)
-
 
         plt.xticks([0, 0.5, 1, 1.5, 2], size=size)
         plt.yticks([0, 0.1, 0.2, 0.3, 0.4, 0.5], size=size)
@@ -130,11 +131,14 @@ def temp_map():
         #plt.gca().set_xlim([0.8,6.2])
         #plt.gca().set_ylim([1, 1.10])
 
-        plt.tight_layout()
+
+        extent = im.get_extent()
+        ax.set_aspect(abs((extent[1]-extent[0])/(extent[3]-extent[2]))/1)
         #plt.title('$\\beta \\ vs \\ \\gamma$\nn=' + str(len(G.nodes)) + ', k=' + str(k) + \
                   #', p=' + str(1) + ', grid_size=' + str(num_steps) + 'x' + str(num_steps) + ', gi=' + str(gi))
+        plt.tight_layout()
         #plt.show()
-        plt.savefig('overlay-10/complete2/' + str(ii) + '.svg')
+        plt.savefig('random/' + str(num_nodes) + '-' + str(random.randint(1, 10000)) + '.svg')
         #if flag == 0: plt.savefig('figures/p/' + str(gi) + '.png')
         #else: plt.savefig('figures/e/' + str(gi) + '.png')
 
