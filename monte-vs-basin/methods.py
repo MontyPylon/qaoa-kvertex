@@ -20,23 +20,6 @@ def qaoa(gb, G, C, M , k, p):
         state = common.mixer(state, M, gb[p+i])
     return -common.expectation(G, k, state)
 
-def basin_best(G, C, M, k, p, num_samples):
-    low_g, up_g = 0, 2*pi
-    low_b, up_b = 0, pi/2
-    bounds = [[low_g,up_g] if j < p else [low_b,up_b] for j in range(2*p)]
-    evals = 0
-    n_iter = 10
-    max_fun = 100
-    best_exp = -1
-    while evals < num_samples:
-        angles = [random.uniform(low_g, up_g) if j < p else random.uniform(low_b, up_b) for j in range(2*p)]
-        kwargs = {'method': 'L-BFGS-B', 'options': {'maxfun': max_fun}, 'args': (G, C, M, k, p), 'bounds': bounds}
-        optimal = basinhopping(qaoa, angles, minimizer_kwargs=kwargs, niter=n_iter, disp=True)
-        evals += optimal.nfev
-        if -optimal.fun > best_exp: best_exp = -optimal.fun
-        print('p: ' + str(p) + ', evals: ' + str(evals))
-    return best_exp
-
 def monte_best(G, C, M, k, p, num_samples):
     low_g, up_g = 0, 2*pi
     low_b, up_b = 0, pi/2
@@ -45,4 +28,55 @@ def monte_best(G, C, M, k, p, num_samples):
         angles = [random.uniform(low_g, up_g) if j < p else random.uniform(low_b, up_b) for j in range(2*p)]
         value = -qaoa(angles, G, C, M, k, p)
         if value > best_exp: best_exp = value
+    return best_exp
+
+def basin_best(G, C, M, k, p, num_samples):
+    low_g, up_g = 0, 2*pi
+    low_b, up_b = 0, pi/2
+    bounds = [[low_g,up_g] if j < p else [low_b,up_b] for j in range(2*p)]
+    evals = 0
+    n_iter = 10
+    max_fun = num_samples/10
+    best_exp = -1
+    while evals < num_samples:
+        angles = [random.uniform(low_g, up_g) if j < p else random.uniform(low_b, up_b) for j in range(2*p)]
+        kwargs = {'method': 'L-BFGS-B', 'options': {'maxfun': max_fun}, 'args': (G, C, M, k, p), 'bounds': bounds}
+        optimal = basinhopping(qaoa, angles, minimizer_kwargs=kwargs, niter=n_iter, disp=True)
+        evals += optimal.nfev
+        if -optimal.fun > best_exp: best_exp = -optimal.fun
+    return best_exp
+
+def inter_best(G, C, M, k, p, num_samples):
+    low_g, up_g = 0, 2*pi
+    low_b, up_b = 0, pi/2
+    bounds = [[low_g,up_g] if j < p else [low_b,up_b] for j in range(2*p)]
+    gamma = np.linspace(0.4, 1.7, p+2)
+    gamma = np.delete(gamma, len(gamma)-1)
+    gamma = np.delete(gamma, 0)
+    gamma = list(gamma)
+    beta = np.linspace(0.18, 0, p+2)
+    beta = np.delete(beta, len(beta)-1)
+    beta = np.delete(beta, 0)
+    beta = list(beta)
+    orig = gamma.copy()
+    orig.extend(beta)
+
+    evals = 0
+    n_iter = 10
+    max_fun = num_samples/10
+    best_exp = -1
+    while evals < num_samples:
+        angles = []
+        for j in range(2*p):
+            offset = 0
+            if j < p:
+                offset = random.uniform(-0.3,0.3)
+            else:
+                offset = random.uniform(-0.05, 0.05)
+            angles.append(orig[j] + offset)
+            if angles[j] < 0: angles[j] = 0
+        kwargs = {'method': 'L-BFGS-B', 'options': {'maxfun': max_fun}, 'args': (G, C, M, k, p), 'bounds': bounds}
+        optimal = basinhopping(qaoa, angles, minimizer_kwargs=kwargs, niter=n_iter, disp=True)
+        evals += optimal.nfev
+        if -optimal.fun > best_exp: best_exp = -optimal.fun
     return best_exp

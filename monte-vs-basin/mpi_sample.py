@@ -45,7 +45,7 @@ if __name__ == '__main__':
     seed = random.randint(1,1000) + rank
     random.seed(seed)
     best_sol = common.brute_force(G, k)
-    num_samples = 1000 # collect x samples on each cpu, remember size = # cpus
+    num_samples = 100 # collect x samples on each cpu, remember size = # cpus
     z_star = 1.96 # confidence interval of 1.96 = 95%, 2.56 = 99%
 
     all_samples = []

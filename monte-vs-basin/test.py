@@ -5,29 +5,14 @@ from scipy.optimize import basinhopping
 from scipy.optimize import minimize
 import sys
 sys.path.insert(0, '../common/')
+sys.path.insert(0, './')
+import methods
 import os
 import common
 import pickle
 import random
 import time
 import datetime
-
-def qaoa(gb, G, C, M , k, p):
-    state = common.dicke(len(G.nodes), k)
-    for i in range(p):
-        state = common.phase_separator(state, C, gb[i])
-        state = common.mixer(state, M, gb[p+i])
-    return -common.expectation(G, k, state)
-
-def find_best(G, C, M, k, p, num_samples):
-    low_g, up_g = 0, 2*pi
-    low_b, up_b = 0, pi/2
-    best_exp = -1
-    for i in range(num_samples):
-        angles = [random.uniform(low_g, up_g) if j < p else random.uniform(low_b, up_b) for j in range(2*p)]
-        value = -qaoa(angles, G, C, M, k, p)
-        if value > best_exp: best_exp = value
-    return best_exp
 
 if __name__ == '__main__':
     random.seed(6)
@@ -53,7 +38,7 @@ if __name__ == '__main__':
         print('p = ' + str(p))
         samples = []
         for i in range(s):
-            best_exp = find_best(G, C, M, k, p, num_samples)
+            best_exp = methods.inter_best(G, C, M, k, p, num_samples)
             samples.append(best_exp/best_sol)
             if (i+1) % 5 == 0: print('\ti: ' + str(i+1) + '\tavg: ' + str(np.average(samples)) \
                                   + '\tstd: ' + str(np.std(samples)) + '\terr: ' + str(z_star*np.std(samples)/np.sqrt(i+1)))
