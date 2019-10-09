@@ -8,6 +8,7 @@ from multiprocessing import Process
 
 def read_data():
     data = []
+    files = []
     #path = 'data/complete-6/'
     path = 'interpolation/complete-6/'
     if os.path.exists(path):
@@ -19,15 +20,34 @@ def read_data():
                     try:
                         local = pickle.load(f)
                         data.append(local)
+                        files.append(i)
                     except Exception as e:
                         print(e)
     final = []
     #for p in range(3, 9):
-    p = 8
+    p = 7
     gamma, beta = [], []
+    gbad5 = [3900, 3901, 3913, 3914, 3926, 3928]
+    gbad6 = [3901, 3909, 3913, 3914, 3922]
+    gbad7 = [3901, 3909, 3913, 3914, 3918, 3922, 3923, 3928, 3931]
+    gbad8 = [3901, 3902, 3905, 3906, 3909, 3912, 3913, 3914, 3916, 3918, 3923, 3928, 3920, 3930, 3931, 3932, 3933, 3934]
+
+    bbad5 = [3900, 3901, 3902, 3904, 3912, 3913, 3914, 3919, 3928]
+    bbad6 = [3900, 3901, 3909, 3913, 3914, 3918, 3919, 3926, 3928]
+    bbad7 = [3900, 3901, 3903, 3909, 3913, 3914, 3918, 3919, 3922, 3923, 3926, 3928, 3929, 3931, 3932]
+    bbad8 = []
     for i in range(len(data)):
-        gamma.append(data[i][1][p-3][:p])
-        beta.append(data[i][1][p-3][p:])
+        if (p == 5 and files[i] not in gbad5) \
+        or (p == 6 and files[i] not in gbad6) \
+        or (p == 7 and files[i] not in gbad7) \
+        or (p == 8 and files[i] not in gbad8):
+            gamma.append(data[i][1][p-3][:p])
+
+        if (p == 5 and files[i] not in bbad5) \
+        or (p == 6 and files[i] not in bbad6) \
+        or (p == 7 and files[i] not in bbad7) \
+        or (p == 8 and files[i] not in bbad8):
+            beta.append(data[i][1][p-3][p:])
 
     '''
     # remove gamma outliers
@@ -72,15 +92,47 @@ def read_data():
     #pickle.dump(final, open('interpolation/complete-6.angles', 'wb'))
 
 
-    for i in range(len(gamma)):
-        plt.plot([x+1 for x in range(p)], gamma[i], '-o', color='lightgrey', label='gamma')
-    plt.errorbar([x+1 for x in range(p)], avg_gamma, yerr=std_gamma, fmt='-o', color='red', label='avg_gamma', zorder=40, capsize=5, linewidth=2)
+    #for i in range(len(gamma)):
+        # GAMMA
+        #plt.plot([x+1 for x in range(p)], gamma[i], '-o', color='lightgrey', label='gamma')
+        #plt.errorbar([x+1 for x in range(p)], avg_gamma, yerr=std_gamma, fmt='-o', color='red', label='avg_gamma', zorder=40, capsize=5, linewidth=2)
+        #plt.title('file = ' + str(files[i]))
+        #plt.show()
+
+    for i in range(len(beta)):
+        # BETA
+        plt.plot([x+1 for x in range(p)], beta[i], '-o', color='lightgrey', label='beta')
+        #plt.errorbar([x+1 for x in range(p)], avg_beta, yerr=std_beta, fmt='-o', color='red', label='avg_beta', zorder=40, capsize=5, linewidth=2)
+        #plt.title('file = ' + str(files[i]))
+        #plt.show()
+
+
+    # GAMMA AVERAGE
+    #plt.errorbar([x+1 for x in range(p)], avg_gamma, yerr=std_gamma, fmt='-o', color='red', label='avg_gamma', zorder=40, capsize=5, linewidth=2)
+    # BETA AVERAGE
+    plt.errorbar([x+1 for x in range(p)], avg_beta, yerr=std_beta, fmt='-o', color='red', label='avg_beta', zorder=40, capsize=5, linewidth=2)
+
+    size = 20
+    # GAMMA
+    #plt.gca().set_ylabel('Value of $\gamma_i$', fontsize=size, labelpad=10)
+    #plt.yticks([0,0.5,1,1.5,2], size=size)
+
+    # BETA
+    plt.gca().set_ylabel('Value of $\\beta_i$', fontsize=size, labelpad=10)
+    plt.yticks([0,0.05,0.1,0.15,0.2], size=size)
+
+    plt.gca().set_xlabel('$i$', fontsize=size)
+    plt.xticks([x+1 for x in range(p)], size=size)
+    plt.yticks(size=size)
+
+
+    plt.tight_layout()
+    plt.show()
 
     #for i in range(len(beta)):
     #    plt.plot([x+1 for x in range(p)], beta[i], '-o', color='lightgrey', label='beta')
     #plt.errorbar([x+1 for x in range(p)], avg_beta, yerr=std_beta, fmt='-o', color='red', label='avg_beta', zorder=40, capsize=5, linewidth=2)
 
-    plt.show()
 
 
     ''' 
