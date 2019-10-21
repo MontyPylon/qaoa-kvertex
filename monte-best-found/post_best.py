@@ -20,8 +20,8 @@ def find_best(monte, p, num_samples, i):
     return np.max(sample)
 
 if __name__ == '__main__':
-    #monte = pickle.load(open('dist/2019-09-08 10:33:30.502320', 'rb'))
-    monte = pickle.load(open('dist/2019-09-08 13:28:50.508902', 'rb'))
+    monte = pickle.load(open('dist/2019-09-08 10:33:30.502320', 'rb'))
+    #monte = pickle.load(open('dist/2019-09-08 13:28:50.508902', 'rb'))
     num_samples = len(monte[0][0]) / 36
     s = 36
 
@@ -29,7 +29,7 @@ if __name__ == '__main__':
     best_exps = []
     errors = []
     now = datetime.datetime.now()
-    for p in range(1,6):
+    for p in range(1,11):
         print('p = ' + str(p))
         samples = []
         for i in range(s):
@@ -41,13 +41,14 @@ if __name__ == '__main__':
         best_exps.append(np.average(samples))
         errors.append(1.96*np.std(samples)/np.sqrt(s))
 
+    font_size = 19
     plt.errorbar([x+1 for x in range(len(best_exps))], best_exps, yerr=errors, fmt='--bo', capsize=5)
     #plt.legend(loc=4, fontsize=17)
-    plt.gca().set_ylabel('Approximation ratio', fontsize=17, labelpad=15)
-    plt.gca().set_xlabel('$p$', fontsize=17)
-    plt.xticks([x+1 for x in range(len(monte[0]))], size=17)
+    plt.gca().set_ylabel('Best approximation ratio', fontsize=font_size, labelpad=15)
+    plt.gca().set_xlabel('$p$', fontsize=font_size)
+    plt.xticks([x+1 for x in range(len(monte[0]))], size=font_size)
     #plt.yticks([0.005, 0.01, 0.015, 0.02, 0.025], size=17)
-    plt.yticks(size=17)
+    plt.yticks(size=font_size)
     plt.gca().set_xlim([0.8,len(monte[0])+0.2])
     #plt.gca().set_ylim([0,0.03])
     plt.tight_layout()

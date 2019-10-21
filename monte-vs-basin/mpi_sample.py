@@ -26,9 +26,10 @@ if __name__ == '__main__':
     # 1 = monte
     # 2 = basin
     # 3 = inter
+    # 4 = inter2
     arg = sys.argv[1]
-    if arg != '1' and arg != '2' and arg != '3':
-        if rank == 0: print('arg options are 1,2,3')
+    if arg != '1' and arg != '2' and arg != '3' and arg != '4':
+        if rank == 0: print('arg options are 1,2,3,4')
         sys.exit(1)
     arg = int(arg)
 
@@ -62,7 +63,8 @@ if __name__ == '__main__':
         # basin hopping
         if arg == 2: best_exp = methods.basin_best(G, C, M, k, p, num_samples)
         # linear interpolation
-        if arg == 3: best_exp = methods.basin_best(G, C, M, k, p, num_samples)
+        if arg == 3: best_exp = methods.inter_best(G, C, M, k, p, num_samples)
+        if arg == 4: best_exp = methods.inter_best2(G, C, M, k, p, num_samples)
 
         # scale to approximation ratio
         best_exp = best_exp/best_sol
@@ -80,4 +82,5 @@ if __name__ == '__main__':
             if arg == 1: folder = 'monte/'
             if arg == 2: folder = 'basin/'
             if arg == 3: folder = 'inter/'
+            if arg == 4: folder = 'inter2/'
             pickle.dump([all_samples, best_exps, errors, size], open(folder + str(now), 'wb'))

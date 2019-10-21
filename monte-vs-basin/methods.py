@@ -80,3 +80,28 @@ def inter_best(G, C, M, k, p, num_samples):
         evals += optimal.nfev
         if -optimal.fun > best_exp: best_exp = -optimal.fun
     return best_exp
+
+def inter_best2(G, C, M, k, p, num_samples):
+    low_g, up_g = 0, 2*pi
+    low_b, up_b = 0, pi/2
+    bounds = [[low_g,up_g] if j < p else [low_b,up_b] for j in range(2*p)]
+
+    evals = 0
+    n_iter = 10
+    max_fun = num_samples/10
+    best_exp = -1
+    while evals < num_samples:
+        left_g = np.random.uniform(0, 1)
+        right_g = np.random.uniform(1, 2)
+        gamma = np.linspace(left_g, right_g, p)
+        left_b = np.random.uniform(0.1, 0.2)
+        right_b = np.random.uniform(0, 0.1)
+        beta = np.linspace(left_b, right_b, p)
+        angles = gamma.copy()
+        angles.extend(beta)
+
+        kwargs = {'method': 'L-BFGS-B', 'options': {'maxfun': max_fun}, 'args': (G, C, M, k, p), 'bounds': bounds}
+        optimal = basinhopping(qaoa, angles, minimizer_kwargs=kwargs, niter=n_iter, disp=True)
+        evals += optimal.nfev
+        if -optimal.fun > best_exp: best_exp = -optimal.fun
+    return best_exp
